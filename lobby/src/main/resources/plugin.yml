@@ -1,0 +1,8 @@
+name: ChaseTagLobby
+version: 1.0.0
+main: fr.rammex.chaseTag.lobby.ChaseTagLobby
+api-version: '1.21'
+commands:
+  chasetag:
+    description: Commandes ChaseTag
+    usage: /chasetag <create|join|spectate|list>

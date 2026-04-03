@@ -1,5 +1,103 @@
-package fr.rammex.chasetag.lobby.redis;
+package fr.rammex.chaseTag.lobby.redis;
+
+import fr.rammex.chasetag.common.MessageSerializer;
+import fr.rammex.chasetag.common.RedisChannel;
+import fr.rammex.chasetag.common.ServerState;
+import fr.rammex.chasetag.common.message.GameEndMessage;
+import fr.rammex.chasetag.common.message.ServerReadyMessage;
+import fr.rammex.chaseTag.lobby.ChaseTagLobby;
+import fr.rammex.chaseTag.lobby.game.GameSession;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
+
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class LobbyRedisListener {
 
+    private final ChaseTagLobby plugin;
+    private JedisPubSub pubSub;
+    private Thread listenerThread;
+
+    public LobbyRedisListener(ChaseTagLobby plugin) {
+        this.plugin = plugin;
+    }
+
+    public void start() {
+        pubSub = new JedisPubSub() {
+            @Override
+            public void onMessage(String channel, String message) {
+                if (channel.equals(RedisChannel.SERVER_READY)) {
+                    handleServerReady(message);
+                } else if (channel.equals(RedisChannel.GAME_END)) {
+                    handleGameEnd(message);
+                }
+            }
+        };
+
+        listenerThread = new Thread(() -> {
+            try (Jedis jedis = plugin.getJedisPool().getResource()) {
+                jedis.subscribe(pubSub,
+                    RedisChannel.SERVER_READY,
+                    RedisChannel.GAME_END
+                );
+            } catch (Exception e) {
+                plugin.getLogger().severe("Redis listener erreur : " + e.getMessage());
+            }
+        }, "chasetag-redis-listener");
+
+        listenerThread.setDaemon(true);
+        listenerThread.start();
+    }
+
+    public void stop() {
+        if (pubSub != null && pubSub.isSubscribed()) {
+            pubSub.unsubscribe();
+        }
+    }
+
+    private void handleServerReady(String json) {
+        ServerReadyMessage msg = MessageSerializer.deserialize(json,
+            ServerReadyMessage.class);
+
+        // Mettre à jour Redis
+        try (Jedis jedis = plugin.getJedisPool().getResource()) {
+            jedis.hset(RedisChannel.SERVERS_MAP, msg.getServerId(),
+                ServerState.WAITING.name());
+        }
+
+        // Retrouver la session et envoyer les joueurs (sur le thread principal)
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.getGameManager().getSessions().values().stream()
+                .filter(s -> msg.getServerId().equals(s.getPterodactylServerId()))
+                .findFirst()
+                .ifPresent(session -> {
+                    session.setStatus(GameSession.Status.PLAYING);
+                    sendPlayersToServer(session, msg.getServerId());
+                });
+        });
+    }
+
+    private void handleGameEnd(String json) {
+        GameEndMessage msg = MessageSerializer.deserialize(json, GameEndMessage.class);
+
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.getGameManager().onGameEnd(
+                msg.getServerId(),
+                msg.getPlayerUuids().stream()
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList())
+            );
+        });
+    }
+
+    // Publie sur Redis pour que Velocity envoie les joueurs
+    private void sendPlayersToServer(GameSession session, String serverId) {
+        try (Jedis jedis = plugin.getJedisPool().getResource()) {
+            for (UUID uuid : session.getPlayers()) {
+                jedis.publish(RedisChannel.SEND_TO_LOBBY,
+                    uuid + ":" + serverId);
+            }
+        }
+    }
 }

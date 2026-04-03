@@ -1,5 +1,64 @@
-package fr.rammex.chasetag.lobby;
+package fr.rammex.chaseTag.lobby;
 
-public class ChaseTagLobby {
+import fr.rammex.chaseTag.lobby.pterodactyl.PterodactylClient;
+import fr.rammex.chaseTag.lobby.redis.LobbyRedisListener;
+import fr.rammex.chaseTag.lobby.game.GameManager;
+import fr.rammex.chaseTag.lobby.command.PlayCommand;
+import org.bukkit.plugin.java.JavaPlugin;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
+public final class ChaseTagLobby extends JavaPlugin {
+
+    private static ChaseTagLobby instance;
+    private JedisPool jedisPool;
+    private PterodactylClient pterodactylClient;
+    private GameManager gameManager;
+    private LobbyRedisListener redisListener;
+
+    @Override
+    public void onEnable() {
+        instance = this;
+        saveDefaultConfig();
+
+        // Redis
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(10);
+        this.jedisPool = new JedisPool(
+            poolConfig,
+            getConfig().getString("redis.host", "localhost"),
+            getConfig().getInt("redis.port", 6379)
+        );
+
+        // Pterodactyl
+        this.pterodactylClient = new PterodactylClient(
+            getConfig().getString("pterodactyl.url"),
+            getConfig().getString("pterodactyl.api-key"),
+            getConfig().getInt("pterodactyl.egg-id")
+        );
+
+        // GameManager
+        this.gameManager = new GameManager(this);
+
+        // Listener Redis (thread séparé)
+        this.redisListener = new LobbyRedisListener(this);
+        this.redisListener.start();
+
+        // Commandes
+        getCommand("chasetag").setExecutor(new PlayCommand(this));
+
+        getLogger().info("ChaseTagLobby activé.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (redisListener != null) redisListener.stop();
+        if (jedisPool != null) jedisPool.close();
+        getLogger().info("ChaseTagLobby désactivé.");
+    }
+
+    public static ChaseTagLobby getInstance() { return instance; }
+    public JedisPool getJedisPool() { return jedisPool; }
+    public PterodactylClient getPterodactylClient() { return pterodactylClient; }
+    public GameManager getGameManager() { return gameManager; }
 }
