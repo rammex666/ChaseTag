@@ -51,11 +51,23 @@ public class ChaseTagVelocity {
 
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(10);
-        this.jedisPool = new JedisPool(
-            poolConfig,
-            config.getRedisHost(),
-            config.getRedisPort()
-        );
+        
+        String redisPassword = config.getRedisPassword();
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                config.getRedisHost(),
+                config.getRedisPort(),
+                2000, // timeout
+                redisPassword
+            );
+        } else {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                config.getRedisHost(),
+                config.getRedisPort()
+            );
+        }
 
         this.redisListener = new VelocityRedisListener(this);
         this.redisListener.start();

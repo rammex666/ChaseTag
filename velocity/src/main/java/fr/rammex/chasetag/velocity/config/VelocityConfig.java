@@ -38,6 +38,10 @@ public class VelocityConfig {
         return Integer.parseInt(props.getProperty("redis.port", "6379"));
     }
 
+    public String getRedisPassword() {
+        return props.getProperty("redis.password", "");
+    }
+
     public String getLobbyServerName() {
         return props.getProperty("lobby.server-name", "lobby");
     }

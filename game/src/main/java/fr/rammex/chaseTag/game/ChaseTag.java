@@ -32,7 +32,28 @@ public final class ChaseTag extends JavaPlugin {
         this.host = getConfig().getString("host", "localhost");
         this.port = getConfig().getInt("port", 25565);
 
-        this.jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(10);
+        
+        String redisHost = getConfig().getString("redis.host", "localhost");
+        int redisPort = getConfig().getInt("redis.port", 6379);
+        String redisPassword = getConfig().getString("redis.password", "");
+        
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                redisHost,
+                redisPort,
+                2000, // timeout
+                redisPassword
+            );
+        } else {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                redisHost,
+                redisPort
+            );
+        }
 
         this.redisPublisher = new GameRedisPublisher(jedisPool, serverId, host, port);
         this.redisListener = new GameRedisListener(this);

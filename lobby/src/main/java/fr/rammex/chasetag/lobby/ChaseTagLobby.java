@@ -24,11 +24,26 @@ public final class ChaseTagLobby extends JavaPlugin {
         // Redis
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(10);
-        this.jedisPool = new JedisPool(
-            poolConfig,
-            getConfig().getString("redis.host", "localhost"),
-            getConfig().getInt("redis.port", 6379)
-        );
+        
+        String redisHost = getConfig().getString("redis.host", "localhost");
+        int redisPort = getConfig().getInt("redis.port", 6379);
+        String redisPassword = getConfig().getString("redis.password", "");
+        
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                redisHost,
+                redisPort,
+                2000, // timeout
+                redisPassword
+            );
+        } else {
+            this.jedisPool = new JedisPool(
+                poolConfig,
+                redisHost,
+                redisPort
+            );
+        }
 
         // Pterodactyl
         this.pterodactylClient = new PterodactylClient(
