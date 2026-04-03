@@ -1,10 +1,8 @@
-package fr.rammex.chaseTag.arena;
+package fr.rammex.chaseTag.game.arena;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import fr.rammex.chaseTag.player.Player;
-import fr.rammex.chaseTag.player.PlayerSerializer;
 
 import java.io.*;
 import java.lang.reflect.Type;

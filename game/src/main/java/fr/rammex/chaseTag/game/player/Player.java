@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.player;
+package fr.rammex.chaseTag.game.player;
 
 public class Player {
     private final String playerUUID;

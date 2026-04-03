@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.arena;
+package fr.rammex.chaseTag.game.arena;
 
 public class Arena {
     private final String id;

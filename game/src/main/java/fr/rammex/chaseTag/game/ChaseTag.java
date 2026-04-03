@@ -1,7 +1,7 @@
-package fr.rammex.chaseTag;
+package fr.rammex.chaseTag.game;
 
-import fr.rammex.chaseTag.player.PlayerManager;
-import fr.rammex.chaseTag.player.events.PlayerListener;
+import fr.rammex.chaseTag.game.player.PlayerManager;
+import fr.rammex.chaseTag.game.player.events.PlayerListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ChaseTag extends JavaPlugin {

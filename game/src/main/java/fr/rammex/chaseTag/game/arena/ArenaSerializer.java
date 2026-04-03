@@ -1,9 +1,6 @@
-package fr.rammex.chaseTag.arena;
+package fr.rammex.chaseTag.game.arena;
 
 import com.google.gson.*;
-import fr.rammex.chaseTag.player.Player;
-import fr.rammex.chaseTag.player.Rank;
-import fr.rammex.chaseTag.player.Role;
 
 import java.lang.reflect.Type;
 

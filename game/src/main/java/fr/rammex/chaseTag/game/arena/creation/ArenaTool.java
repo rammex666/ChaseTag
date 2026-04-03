@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.arena.creation;
+package fr.rammex.chaseTag.game.arena.creation;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

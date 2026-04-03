@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.player;
+package fr.rammex.chaseTag.game.player;
 
 public enum Role {
     Spec("§8Spéctateur","spec"),

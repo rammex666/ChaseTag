@@ -1,6 +1,6 @@
-package fr.rammex.chaseTag.arena.creation.event;
+package fr.rammex.chaseTag.game.arena.creation.event;
 
-import fr.rammex.chaseTag.arena.creation.ArenaTool;
+import fr.rammex.chaseTag.game.arena.creation.ArenaTool;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

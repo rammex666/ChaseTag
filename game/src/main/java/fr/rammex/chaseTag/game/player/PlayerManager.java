@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.player;
+package fr.rammex.chaseTag.game.player;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

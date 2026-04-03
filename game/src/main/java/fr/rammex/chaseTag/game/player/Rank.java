@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.player;
+package fr.rammex.chaseTag.game.player;
 
 public enum Rank {
     Orga("§6Organisateur","orga"),

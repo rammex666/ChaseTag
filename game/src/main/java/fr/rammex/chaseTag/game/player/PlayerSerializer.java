@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.player;
+package fr.rammex.chaseTag.game.player;
 
 import com.google.gson.*;
 import java.lang.reflect.Type;
