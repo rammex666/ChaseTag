@@ -1,0 +1,4 @@
+name: ChaseTag
+version: '1.0-SNAPSHOT'
+main: fr.rammex.chaseTag.ChaseTag
+api-version: '1.21'

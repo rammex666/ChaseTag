@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.10.1'
+    compileOnly 'redis.clients:jedis:5.1.0'
+}

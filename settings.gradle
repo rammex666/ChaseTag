@@ -1,1 +1,6 @@
-rootProject.name = 'ChaseTag'
+rootProject.name = 'chasetag'
+
+include 'common'
+include 'lobby'
+include 'velocity'
+include 'game'
