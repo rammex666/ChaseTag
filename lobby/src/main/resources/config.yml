@@ -1,6 +1,7 @@
 redis:
   host: localhost
   port: 6379
+  password: ""
 
 pterodactyl:
   url: https://panel.ton-domaine.fr
