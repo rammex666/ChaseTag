@@ -2,9 +2,12 @@ package fr.rammex.chaseTag.game;
 
 import fr.rammex.chaseTag.game.player.PlayerManager;
 import fr.rammex.chaseTag.game.player.events.PlayerListener;
+
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import fr.rammex.chaseTag.game.redis.GameRedisListener;
 import fr.rammex.chaseTag.game.redis.GameRedisPublisher;
+import fr.rammex.chaseTag.game.timer.TimerManager;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -16,6 +19,7 @@ public final class ChaseTag extends JavaPlugin {
     private JedisPool jedisPool;
     private GameRedisPublisher redisPublisher;
     private GameRedisListener redisListener;
+    private TimerManager timerManager;
 
 
     private String serverId;
@@ -60,6 +64,11 @@ public final class ChaseTag extends JavaPlugin {
 
         this.playerManager = new PlayerManager();
         PlayerManager.init(this.getDataFolder());
+
+        this.timerManager = new TimerManager();
+
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, 
+    () -> timerManager.update(), 0, 1);
 
         redisPublisher.publishServerReady();
         redisListener.start();
@@ -106,6 +115,10 @@ public final class ChaseTag extends JavaPlugin {
     private void loadEvents(){
         this.getServer().getPluginManager().registerEvents(new PlayerListener(),this);
     }
+
+    private TimerManager getTimerManager() {
+        return timerManager;
+    }
 }
 /*
 // Quand la partie se termine
@@ -115,5 +128,15 @@ List<String> playerUuids = players.stream()
 
 ChaseTag.getInstance().onGameFinished(winner.getUniqueId().toString(), playerUuids);
 
+
+*/
+
+/*
+timerManager.createTimer("match", 60)
+    .onFinished(() -> {
+        System.out.println("La partie est terminée!");
+        // Votre code ici
+    })
+    .start();
 
 */
