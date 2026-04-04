@@ -1,0 +1,9 @@
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+
+pterodactyl:
+  url: https://panel.ton-domaine.fr
+  api-key: ptla_XXXXXXXXXXXX
+  egg-id: 5

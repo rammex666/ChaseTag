@@ -11,7 +11,6 @@ public class PlayerSerializer implements JsonSerializer<Player>, JsonDeserialize
 
         obj.addProperty("uuid", player.getPlayerUUID());
         obj.addProperty("role", player.getPlayerRole().getId());
-        obj.addProperty("rank", player.getPlayerRank().getId());
 
         return obj;
     }
@@ -23,8 +22,7 @@ public class PlayerSerializer implements JsonSerializer<Player>, JsonDeserialize
 
         String uuid = obj.get("uuid").getAsString();
         Role role = Role.getRoleFromID(obj.get("role").getAsString());
-        Rank rank = Rank.getRankFromID(obj.get("rank").getAsString());
 
-        return new Player(uuid,role,rank);
+        return new Player(uuid,role);
     }
 }

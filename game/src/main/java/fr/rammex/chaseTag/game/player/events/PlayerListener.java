@@ -2,7 +2,6 @@ package fr.rammex.chaseTag.game.player.events;
 
 import fr.rammex.chaseTag.game.player.Player;
 import fr.rammex.chaseTag.game.player.PlayerManager;
-import fr.rammex.chaseTag.game.player.Rank;
 import fr.rammex.chaseTag.game.player.Role;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -18,7 +17,7 @@ public class PlayerListener implements Listener {
     public void onPlayerJoinFirstTime(PlayerJoinEvent event){
         org.bukkit.entity.Player player = event.getPlayer();
         if(!player.hasPlayedBefore()){
-            Player playerRegistry = new Player(player.getUniqueId().toString(), Role.None, Rank.Player);
+            Player playerRegistry = new Player(player.getUniqueId().toString(), Role.None);
             PlayerManager.addPlayer(playerRegistry);
             PlayerManager.save();
         }
@@ -27,13 +26,11 @@ public class PlayerListener implements Listener {
         Player player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
 
         if(player1 == null){
-            Player playerRegistry = new Player(player.getUniqueId().toString(), Role.None, Rank.Player);
+            Player playerRegistry = new Player(player.getUniqueId().toString(), Role.None);
             PlayerManager.addPlayer(playerRegistry);
             PlayerManager.save();
             player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
         }
-
-        event.setJoinMessage(player1.getPlayerRank().getPrefix()+" "+player.getName()+" à rejoint le serveur.");
     }
 
     @EventHandler
@@ -44,9 +41,8 @@ public class PlayerListener implements Listener {
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
         event.setCancelled(true);
         Role playerRole = player1.getPlayerRole();
-        Rank playerRank = player1.getPlayerRank();
 
-        String newMessage = playerRank.getPrefix()+" "+playerRole.getPrefix()+" "+player.getName()+" >> "+message;
+        String newMessage = playerRole.getPrefix()+" "+player.getName()+" >> "+message;
         Bukkit.broadcast(Component.text(newMessage));
     }
 }
