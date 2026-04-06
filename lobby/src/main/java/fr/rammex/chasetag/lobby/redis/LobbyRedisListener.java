@@ -1,12 +1,12 @@
-package fr.rammex.chaseTag.lobby.redis;
+package fr.rammex.chasetag.lobby.redis;
 
 import fr.rammex.chasetag.common.MessageSerializer;
 import fr.rammex.chasetag.common.RedisChannel;
 import fr.rammex.chasetag.common.ServerState;
 import fr.rammex.chasetag.common.message.GameEndMessage;
 import fr.rammex.chasetag.common.message.ServerReadyMessage;
-import fr.rammex.chaseTag.lobby.ChaseTagLobby;
-import fr.rammex.chaseTag.lobby.game.GameSession;
+import fr.rammex.chasetag.lobby.ChaseTagLobby;
+import fr.rammex.chasetag.lobby.game.GameSession;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 

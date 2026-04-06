@@ -1,9 +1,9 @@
-package fr.rammex.chaseTag.lobby;
+package fr.rammex.chasetag.lobby;
 
-import fr.rammex.chaseTag.lobby.pterodactyl.PterodactylClient;
-import fr.rammex.chaseTag.lobby.redis.LobbyRedisListener;
-import fr.rammex.chaseTag.lobby.game.GameManager;
-import fr.rammex.chaseTag.lobby.command.PlayCommand;
+import fr.rammex.chasetag.lobby.command.PlayCommand;
+import fr.rammex.chasetag.lobby.game.GameManager;
+import fr.rammex.chasetag.lobby.pterodactyl.PterodactylClient;
+import fr.rammex.chasetag.lobby.redis.LobbyRedisListener;
 import org.bukkit.plugin.java.JavaPlugin;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;

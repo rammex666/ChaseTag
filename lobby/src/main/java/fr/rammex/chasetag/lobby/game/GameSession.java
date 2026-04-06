@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.lobby.game;
+package fr.rammex.chasetag.lobby.game;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ public class GameSession {
         this.ownerUuid = ownerUuid;
     }
 
-    public boolean isFull() { return players.size() >= 2; }
-    public boolean isReady() { return players.size() == 2; }
+    public boolean isFull() { return players.size() >= 1; }
+    public boolean isReady() { return players.size() == 1; }
 
     public boolean addPlayer(UUID uuid) {
         if (isFull()) return false;
