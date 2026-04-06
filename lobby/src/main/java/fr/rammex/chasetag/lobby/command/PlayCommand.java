@@ -1,7 +1,7 @@
-package fr.rammex.chaseTag.lobby.command;
+package fr.rammex.chasetag.lobby.command;
 
-import fr.rammex.chaseTag.lobby.ChaseTagLobby;
-import fr.rammex.chaseTag.lobby.game.GameSession;
+import fr.rammex.chasetag.lobby.ChaseTagLobby;
+import fr.rammex.chasetag.lobby.game.GameSession;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

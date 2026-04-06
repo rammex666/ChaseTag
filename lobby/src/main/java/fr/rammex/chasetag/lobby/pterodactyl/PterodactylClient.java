@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.lobby.pterodactyl;
+package fr.rammex.chasetag.lobby.pterodactyl;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

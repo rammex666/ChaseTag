@@ -1,9 +1,9 @@
-package fr.rammex.chaseTag.lobby.game;
+package fr.rammex.chasetag.lobby.game;
 
 import fr.rammex.chasetag.common.RedisChannel;
 import fr.rammex.chasetag.common.ServerState;
-import fr.rammex.chaseTag.lobby.ChaseTagLobby;
-import fr.rammex.chaseTag.lobby.pterodactyl.PterodactylClient;
+import fr.rammex.chasetag.lobby.ChaseTagLobby;
+import fr.rammex.chasetag.lobby.pterodactyl.PterodactylClient;
 import redis.clients.jedis.Jedis;
 
 import java.util.*;
