@@ -1,5 +1,7 @@
 package fr.rammex.chaseTag.game.arena;
 
+import org.bukkit.Location;
+
 public class Arena {
     private final String id;
     private final String name;
@@ -10,6 +12,9 @@ public class Arena {
     private double y2;
     private double z1;
     private double z2;
+    private Location blueSpawn;
+    private Location redSpawn;
+    private Location specSpawn;
 
     public Arena(String id, String name, String worldName, double x1, double x2, double y1, double y2, double z1, double z2){
         this.id = id;
@@ -86,5 +91,42 @@ public class Arena {
 
     public void setZ2(double z2) {
         this.z2 = z2;
+    }
+
+    public void setBlueSpawn(Location blueSpawn) {
+        this.blueSpawn = blueSpawn;
+    }
+
+    public void setRedSpawn(Location redSpawn) {
+        this.redSpawn = redSpawn;
+    }
+
+    public void setSpecSpawn(Location specSpawn) {
+        this.specSpawn = specSpawn;
+    }
+
+    public boolean isInside(Location loc) {
+        if (loc == null || loc.getWorld() == null || !loc.getWorld().getName().equals(worldName)) {
+            return false;
+        }
+        double x = loc.getX();
+        double y = loc.getY();
+        double z = loc.getZ();
+
+        return x >= Math.min(x1, x2) && x <= Math.max(x1, x2) &&
+               y >= Math.min(y1, y2) && y <= Math.max(y1, y2) &&
+               z >= Math.min(z1, z2) && z <= Math.max(z1, z2);
+    }
+
+    public Location getBlueSpawn() {
+        return blueSpawn;
+    }
+
+    public Location getRedSpawn() {
+        return redSpawn;
+    }
+
+    public Location getSpecSpawn() {
+        return specSpawn;
     }
 }

@@ -1,4 +1,4 @@
-package fr.rammex.chasetag.common.timer;
+package fr.rammex.chaseTag.game.timer;
 
 /**
  * Classe représentant un timer individuel

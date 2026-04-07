@@ -15,30 +15,29 @@ import java.util.Map;
 
 public class ArenaCreationEvent implements Listener {
     private final ArenaTool arenaTool = new ArenaTool();
-    private static Map<Player, Location> firstPositions = new HashMap<>();
-    private static Map<Player, Location> secondPositions = new HashMap<>();
+    private static final Map<Player, Location> firstPositions = new HashMap<>();
+    private static final Map<Player, Location> secondPositions = new HashMap<>();
 
-    @SuppressWarnings({ "deprecation", "incomplete-switch" })
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event){
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         if(item != null && item.getType().equals(Material.STICK)){
-            if(item.equals(arenaTool.getArenaTool())){
+            if(item.isSimilar(arenaTool.getArenaTool())){
                 event.setCancelled(true);
-                switch (event.getAction()) {
-                    case Action.LEFT_CLICK_BLOCK:
-                        player.sendMessage("1ère position définit");
-                        firstPositions.put(player, event.getClickedBlock().getLocation());
-                        break;
-                    case Action.RIGHT_CLICK_BLOCK:
-                        player.sendMessage("2ème position définit");
-                        secondPositions.put(player, event.getClickedBlock().getLocation());
-                        break;
+                if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                    player.sendMessage("§a1ère position définie : §f" + formatLoc(event.getClickedBlock().getLocation()));
+                    firstPositions.put(player, event.getClickedBlock().getLocation());
+                } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                    player.sendMessage("§a2ème position définie : §f" + formatLoc(event.getClickedBlock().getLocation()));
+                    secondPositions.put(player, event.getClickedBlock().getLocation());
                 }
             }
         }
+    }
 
+    private String formatLoc(Location loc) {
+        return loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ();
     }
 
     public static Location getFirstPosition(Player player){

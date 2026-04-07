@@ -2,6 +2,7 @@ package fr.rammex.chaseTag.game.player;
 
 public enum Role {
     Spec("§8Spéctateur","spec"),
+    Staff("§bStaff","staff"),
     Chase("§cChasseur","chase"),
     Run("§9Chassé","run"),
     None("","none");

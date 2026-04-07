@@ -1,7 +1,17 @@
 package fr.rammex.chaseTag.game;
 
+import fr.rammex.chaseTag.game.arena.Arena;
+import fr.rammex.chaseTag.game.arena.ArenaManager;
+import fr.rammex.chaseTag.game.arena.creation.event.ArenaCreationEvent;
+import fr.rammex.chaseTag.game.command.ArenaCommand;
+import fr.rammex.chaseTag.game.command.GameTestDevCommand;
+import fr.rammex.chaseTag.game.command.RoleCommand;
+import fr.rammex.chaseTag.game.command.TestGameCommand;
+import fr.rammex.chaseTag.game.game.GameManager;
+import fr.rammex.chaseTag.game.game.ScoreboardManager;
 import fr.rammex.chaseTag.game.player.PlayerManager;
 import fr.rammex.chaseTag.game.player.events.PlayerListener;
+import fr.rammex.chaseTag.game.player.events.PlayerMovementListener;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,10 +26,13 @@ import java.util.List;
 public final class ChaseTag extends JavaPlugin {
     private static ChaseTag instance;
     private PlayerManager playerManager;
+    private ArenaManager arenaManager;
     private JedisPool jedisPool;
     private GameRedisPublisher redisPublisher;
     private GameRedisListener redisListener;
     private TimerManager timerManager;
+    private GameManager gameManager;
+    private ScoreboardManager scoreboardManager;
 
 
     private String serverId;
@@ -65,13 +78,29 @@ public final class ChaseTag extends JavaPlugin {
         this.playerManager = new PlayerManager();
         PlayerManager.init(this.getDataFolder());
 
+        this.arenaManager = new ArenaManager();
+        ArenaManager.init(this.getDataFolder());
+
         this.timerManager = new TimerManager();
+        this.gameManager = new GameManager(this);
+        this.scoreboardManager = new ScoreboardManager(this);
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, 
     () -> timerManager.update(), 0, 1);
+        
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this,
+    () -> scoreboardManager.updateAll(), 0, 20);
 
         redisPublisher.publishServerReady();
         redisListener.start();
+
+        getCommand("testgame").setExecutor(new TestGameCommand());
+        getCommand("gametestdev").setExecutor(new GameTestDevCommand());
+        getCommand("arena").setExecutor(new ArenaCommand());
+        RoleCommand roleCommand = new RoleCommand();
+        getCommand("setplayer").setExecutor(roleCommand);
+        getCommand("setspec").setExecutor(roleCommand);
+        getCommand("setstaff").setExecutor(roleCommand);
 
         loadEvents();
 
@@ -80,11 +109,9 @@ public final class ChaseTag extends JavaPlugin {
     @Override
     public void onDisable() {
         PlayerManager.save();
+        ArenaManager.save();
         if (jedisPool != null) {
             jedisPool.close();
-        }
-        if (redisListener != null) {
-            // Assuming GameRedisListener has a stop method, but it doesn't, so maybe add one or just let it die
         }
     }
 
@@ -95,6 +122,8 @@ public final class ChaseTag extends JavaPlugin {
     public PlayerManager getPlayerManager() {
         return playerManager;
     }
+
+    public ArenaManager getArenaManager(){return arenaManager;}
 
     public JedisPool getJedisPool() {
         return jedisPool;
@@ -108,15 +137,25 @@ public final class ChaseTag extends JavaPlugin {
         return redisPublisher;
     }
 
-    public void onGameFinished(String winnerUuid, List<String> playerUuids) {
-        redisPublisher.publishGameEnd(winnerUuid, playerUuids);
+    public GameManager getGameManager() {
+        return gameManager;
+    }
+
+    public ScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
+
+    public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids) {
+        redisPublisher.publishGameEnd(winnerUuid, winnerName, playerUuids);
     }
 
     private void loadEvents(){
         this.getServer().getPluginManager().registerEvents(new PlayerListener(),this);
+        this.getServer().getPluginManager().registerEvents(new PlayerMovementListener(),this);
+        this.getServer().getPluginManager().registerEvents(new ArenaCreationEvent(),this);
     }
 
-    private TimerManager getTimerManager() {
+    public TimerManager getTimerManager() {
         return timerManager;
     }
 }
