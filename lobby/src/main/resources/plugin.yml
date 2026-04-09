@@ -2,6 +2,7 @@ name: ChaseTagLobby
 version: 1.0.0
 main: fr.rammex.chasetag.lobby.ChaseTagLobby
 api-version: '1.21'
+softdepend: [PlaceholderAPI]
 commands:
   chasetag:
     description: Commandes ChaseTag

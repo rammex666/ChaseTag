@@ -13,6 +13,8 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -127,7 +129,27 @@ public class PlayerListener implements Listener {
         }
 
         if (type == Material.RED_WOOL || type == Material.BLUE_WOOL) {
+            if (game != null && game.getArena() != null) {
+                Arena arena = game.getArena();
+                int maxHeight = arena.getMaxWoolTowerHeight();
+                double minY = Math.min(arena.getY1(), arena.getY2());
+                double currentHeight = event.getBlock().getY() - minY + 1;
+
+                if (currentHeight > maxHeight) {
+                    event.setCancelled(true);
+                    player.sendMessage("§cVous ne pouvez pas construire une tour de laine de plus de " + maxHeight + " blocs de haut par rapport au sol de l'arène !");
+                    return;
+                }
+            }
             ChaseTag.getInstance().getGameManager().addPlacedBlock(event.getBlock());
+        }
+    }
+
+    @EventHandler
+    public void onInteract(org.bukkit.event.player.PlayerInteractEvent event) {
+        Game game = ChaseTag.getInstance().getGameManager().getGame();
+        if (game != null && game.isCountdown()) {
+            event.setCancelled(true);
         }
     }
 
@@ -166,14 +188,18 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        Player damager = PlayerManager.getPlayer(event.getDamager().getUniqueId().toString());
+        org.bukkit.entity.Player attacker = (org.bukkit.entity.Player) event.getDamager();
+        Player damager = PlayerManager.getPlayer(attacker.getUniqueId().toString());
 
         if (event.getEntity() instanceof org.bukkit.entity.Player) {
-            Player victim = PlayerManager.getPlayer(event.getEntity().getUniqueId().toString());
+            org.bukkit.entity.Player victimBukkit = (org.bukkit.entity.Player) event.getEntity();
+            Player victim = PlayerManager.getPlayer(victimBukkit.getUniqueId().toString());
 
             if (damager != null && victim != null) {
                 if (damager.getPlayerRole() == Role.Chase && victim.getPlayerRole() == Role.Run) {
                     event.setCancelled(true);
+                    attacker.playSound(attacker.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 0.5f);
+                    victimBukkit.playSound(victimBukkit.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 0.5f);
                     ChaseTag.getInstance().getGameManager().onTag(damager, victim);
                 } 
                 else if (damager.getPlayerRole() == Role.Run && victim.getPlayerRole() == Role.Chase) {
@@ -185,10 +211,16 @@ public class PlayerListener implements Listener {
             if (testPig != null && event.getEntity().equals(testPig)) {
                 event.setCancelled(true);
                 if (damager != null && damager.getPlayerRole() == Role.Chase) {
+                    attacker.playSound(attacker.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 0.5f);
                     ChaseTag.getInstance().getGameManager().onPigTag(damager);
                 }
             }
         }
+    }
+
+    @EventHandler
+    public void onFoodLevelChange(org.bukkit.event.entity.FoodLevelChangeEvent event) {
+        event.setCancelled(true);
     }
 
     @EventHandler

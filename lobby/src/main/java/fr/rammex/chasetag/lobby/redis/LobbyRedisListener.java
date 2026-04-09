@@ -89,6 +89,15 @@ public class LobbyRedisListener {
                     ChatColor.YELLOW + " a gagné sa partie sur le serveur " + ChatColor.WHITE + msg.getServerId() + " !");
             }
 
+            // Sauvegarder les points globaux dans Redis
+            if (msg.getPlayerScores() != null) {
+                try (Jedis jedis = plugin.getJedisPool().getResource()) {
+                    for (java.util.Map.Entry<String, Integer> entry : msg.getPlayerScores().entrySet()) {
+                        jedis.hincrBy(RedisChannel.GLOBAL_POINTS, entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+
             plugin.getGameManager().onGameEnd(
                 msg.getServerId(),
                 msg.getPlayerUuids().stream()

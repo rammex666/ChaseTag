@@ -14,6 +14,7 @@ import org.bukkit.entity.Pig;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import fr.rammex.chaseTag.game.timer.Timer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,12 +37,20 @@ public class GameManager {
     public void startGame() {
         if (game == null) return;
         game.setGameState(GameState.PLAYING);
+        
+        org.bukkit.World world = game.getArena().getRedSpawn().getWorld();
+        if (world != null) {
+            world.setTime(1000);
+            world.setGameRule(org.bukkit.GameRule.DO_DAYLIGHT_CYCLE, false);
+        }
+
         startRound();
     }
 
     public void startRound() {
         if (game == null || game.getGameState() != GameState.PLAYING) return;
 
+        game.setCountdown(true);
         // Assigner les rôles pour la manche actuelle du round
         assignRoles();
 
@@ -51,7 +60,7 @@ public class GameManager {
         ItemStack shears = new ItemStack(Material.SHEARS);
         ItemMeta meta = shears.getItemMeta();
         if (meta != null) {
-            meta.addEnchant(Enchantment.EFFICIENCY, 5, true);
+            meta.addEnchant(Enchantment.EFFICIENCY, 3, true);
             meta.setUnbreakable(true);
             shears.setItemMeta(meta);
         }
@@ -67,20 +76,26 @@ public class GameManager {
             chaserBukkit.getInventory().addItem(shears);
             chaserBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
             chaserBukkit.sendMessage(ChatColor.RED + "Vous êtes le CHASSEUR ! Taguez le chassé !");
-            }
-            if (runner != null && runner.getBukkitPlayer() != null) {
+            chaserBukkit.sendTitle(ChatColor.RED + "CHASSEUR", ChatColor.YELLOW + "Taguez le chassé !", 0, 40, 0);
+            
+            org.bukkit.attribute.AttributeInstance reach = chaserBukkit.getAttribute(org.bukkit.attribute.Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
+            if (reach != null) reach.setBaseValue(2.0);
+        }
+        if (runner != null && runner.getBukkitPlayer() != null) {
             org.bukkit.entity.Player runnerBukkit = runner.getBukkitPlayer();
             runnerBukkit.teleport(game.getArena().getBlueSpawn());
-            runnerBukkit.setHealth(1.0); // 1 HP = 0.5 coeur
+            runnerBukkit.setHealth(20.0);
             runnerBukkit.setFoodLevel(20);
             runnerBukkit.getInventory().clear();
             runnerBukkit.getInventory().addItem(new ItemStack(Material.BLUE_WOOL, 64));
             runnerBukkit.getInventory().addItem(shears);
             runnerBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
-            runnerBukkit.sendMessage(ChatColor.BLUE + "Vous êtes le CHASSÉ ! Fuyez ! (Vous avez 1 HP)");
-            } else if (game.isTestDev() && runner == null) {
-                // On est en test dev et il n'y a pas de runner (un seul joueur)
-                // Spawn un cochon à la place
+            runnerBukkit.sendMessage(ChatColor.BLUE + "Vous êtes le CHASSÉ ! Fuyez !");
+            runnerBukkit.sendTitle(ChatColor.BLUE + "CHASSÉ", ChatColor.YELLOW + "Fuyez !", 0, 40, 0);
+            
+            org.bukkit.attribute.AttributeInstance reach = runnerBukkit.getAttribute(org.bukkit.attribute.Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
+            if (reach != null) reach.setBaseValue(2.0);
+        } else if (game.isTestDev() && runner == null) {
                 if (testPig != null) testPig.remove();
                 testPig = game.getArena().getBlueSpawn().getWorld().spawnEntity(game.getArena().getBlueSpawn(), EntityType.PIG);
                 Pig pig = (Pig) testPig;
@@ -99,11 +114,10 @@ public class GameManager {
             }
         }
 
-        startCountdown();
+        Bukkit.getScheduler().runTaskLater(plugin, this::startCountdown, 20L);
     }
 
     private void startCountdown() {
-        game.setCountdown(true);
         new org.bukkit.scheduler.BukkitRunnable() {
             int count = 5;
 
@@ -112,22 +126,31 @@ public class GameManager {
                 if (count > 0) {
                     String color = count > 3 ? "§a" : (count > 1 ? "§e" : "§c");
                     String title = color + count;
-                    Bukkit.getOnlinePlayers().forEach(p -> p.sendTitle(title, "§fPréparez-vous !", 0, 25, 0));
+                    Bukkit.getOnlinePlayers().forEach(p -> {
+                        p.sendTitle(title, "§fPréparez-vous !", 0, 25, 0);
+                        if (count <= 3) {
+                            float pitch = (count == 1) ? 2.0f : 1.0f;
+                            p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, pitch);
+                        }
+                    });
                     count--;
                 } else {
-                    Bukkit.getOnlinePlayers().forEach(p -> p.sendTitle("§6§lGO!", "", 0, 20, 10));
+                    Bukkit.getOnlinePlayers().forEach(p -> {
+                        p.sendTitle("§6§lGO!", "", 0, 20, 10);
+                        p.playSound(p.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+                    });
                     game.setCountdown(false);
                     
                     // Démarrer le chrono de 60 secondes (1 minute)
                     plugin.getTimerManager().createTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche(), 60)
                             .onFinished(() -> {
+                                Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f));
                                 if (game.isTestDev() && game.getCurrentRunner() == null) {
                                     // Pas de gagnant ou le chassé gagne par défaut (le cochon)
-                                    // Pour le test dev on peut juste dire que le temps est fini
                                     Bukkit.broadcastMessage(ChatColor.YELLOW + "Temps écoulé !");
-                                    endRound(game.getCurrentChaser(), 0); // On finit sans point ou autre
+                                    endRound(60, 0); 
                                 } else {
-                                    endRound(game.getCurrentRunner(), 2);
+                                    endRound(60, 0);
                                 }
                             })
                             .start();
@@ -172,20 +195,30 @@ public class GameManager {
         if (game == null || game.getGameState() != GameState.PLAYING || game.isCountdown()) return;
         
         if (chaser.equals(game.getCurrentChaser()) && runner.equals(game.getCurrentRunner())) {
-            plugin.getTimerManager().removeTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
-            endRound(chaser, 1);
+            Timer timer = plugin.getTimerManager().getTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
+            int elapsed = 60;
+            if (timer != null) {
+                elapsed = (int) timer.getElapsedSeconds();
+                plugin.getTimerManager().removeTimer(timer.getId());
+            }
+            endRound(elapsed, 60 - elapsed);
         }
     }
 
     public void onPigTag(Player chaser) {
         if (game == null || game.getGameState() != GameState.PLAYING || game.isCountdown()) return;
         if (game.isTestDev() && chaser.equals(game.getCurrentChaser())) {
-            plugin.getTimerManager().removeTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
-            endRound(chaser, 1);
+            Timer timer = plugin.getTimerManager().getTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
+            int elapsed = 60;
+            if (timer != null) {
+                elapsed = (int) timer.getElapsedSeconds();
+                plugin.getTimerManager().removeTimer(timer.getId());
+            }
+            endRound(elapsed, 60 - elapsed);
         }
     }
 
-    public void endRound(Player winner, int points) {
+    public void endRound(int runnerPoints, int chaserPoints) {
         if (game == null) return;
 
         if (testPig != null) {
@@ -193,13 +226,25 @@ public class GameManager {
             testPig = null;
         }
 
-        if (winner != null) {
-            for (int i = 0; i < points; i++) {
-                game.incrementScore(winner.getPlayerUUID());
-            }
-            
-            String pointSuffix = points > 1 ? " points" : " point";
-            Bukkit.broadcastMessage(ChatColor.GREEN + "La manche est terminée ! " + winner.getBukkitPlayer().getName() + " gagne " + points + pointSuffix);
+        Player runner = game.getCurrentRunner();
+        Player chaser = game.getCurrentChaser();
+
+        if (runner != null) {
+            game.addScore(runner.getPlayerUUID(), runnerPoints);
+        }
+        if (chaser != null) {
+            game.addScore(chaser.getPlayerUUID(), chaserPoints);
+        }
+
+        String runnerName = (runner != null && runner.getBukkitPlayer() != null) ? runner.getBukkitPlayer().getName() : "Le chassé";
+        String chaserName = (chaser != null && chaser.getBukkitPlayer() != null) ? chaser.getBukkitPlayer().getName() : (game.isTestDev() ? "Le chasseur" : "Le chasseur");
+
+        Bukkit.broadcastMessage(ChatColor.GREEN + "La manche est terminée !");
+        if (runner != null || game.isTestDev()) {
+            Bukkit.broadcastMessage(ChatColor.BLUE + runnerName + " gagne " + runnerPoints + " points (survie).");
+        }
+        if (chaser != null) {
+            Bukkit.broadcastMessage(ChatColor.RED + chaserName + " gagne " + chaserPoints + " points (capture).");
         }
 
         clearPlacedBlocks();
@@ -283,12 +328,18 @@ public class GameManager {
         }
         
         Bukkit.broadcastMessage(ChatColor.AQUA + "La partie est terminée ! Vainqueur final : " + winnerName);
+        Bukkit.broadcastMessage(ChatColor.GOLD + "--- Scores finaux ---");
+        for (Player p : game.getPlayers()) {
+            if (p.getBukkitPlayer() != null) {
+                Bukkit.broadcastMessage(ChatColor.WHITE + p.getBukkitPlayer().getName() + ": " + ChatColor.YELLOW + game.getScore(p.getPlayerUUID()) + " points");
+            }
+        }
 
         List<String> playerUuids = game.getPlayers().stream()
                 .map(Player::getPlayerUUID)
                 .collect(Collectors.toList());
 
-        plugin.onGameFinished(winnerUuid, winnerName, playerUuids);
+        plugin.onGameFinished(winnerUuid, winnerName, playerUuids, game.getPlayerScores());
     }
 
     public Game getGame() {

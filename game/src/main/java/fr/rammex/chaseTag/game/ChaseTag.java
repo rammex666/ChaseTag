@@ -145,8 +145,8 @@ public final class ChaseTag extends JavaPlugin {
         return scoreboardManager;
     }
 
-    public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids) {
-        redisPublisher.publishGameEnd(winnerUuid, winnerName, playerUuids);
+    public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores) {
+        redisPublisher.publishGameEnd(winnerUuid, winnerName, playerUuids, playerScores);
     }
 
     private void loadEvents(){

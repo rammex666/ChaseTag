@@ -12,7 +12,14 @@ subprojects {
     repositories {
         mavenCentral()
         maven { url = 'https://repo.papermc.io/repository/maven-public/' }
-        maven { url = 'https://repo.velocitypowered.com/snapshots/' }
+        maven { url = 'https://repo.extendedclip.com/releases/' }
+        maven { 
+            url = 'https://repo.velocitypowered.com/snapshots/' 
+            content {
+                excludeGroup "com.extendedclip"
+                excludeGroup "me.clip"
+            }
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {

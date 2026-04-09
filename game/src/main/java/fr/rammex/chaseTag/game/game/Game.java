@@ -126,11 +126,19 @@ public class Game {
         return maxManchesPerRound;
     }
 
+    public void addScore(String playerUUID, int amount) {
+        playerScores.put(playerUUID, playerScores.getOrDefault(playerUUID, 0) + amount);
+    }
+
     public void incrementScore(String playerUUID) {
-        playerScores.put(playerUUID, playerScores.getOrDefault(playerUUID, 0) + 1);
+        addScore(playerUUID, 1);
     }
 
     public int getScore(String playerUUID) {
         return playerScores.getOrDefault(playerUUID, 0);
+    }
+
+    public Map<String, Integer> getPlayerScores() {
+        return playerScores;
     }
 }

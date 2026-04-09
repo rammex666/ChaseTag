@@ -19,6 +19,9 @@ public final class RedisChannel {
     // Hash Redis : serverId -> port
     public static final String SERVERS_PORT = "chasetag:servers:port";
 
+    // Hash Redis : playerUuid -> points
+    public static final String GLOBAL_POINTS = "chasetag:points:global";
+
     // List Redis : queue des joueurs en attente de partie
     public static final String PLAYER_QUEUE = "chasetag:queue";
 }

@@ -22,6 +22,7 @@ public class ArenaSerializer implements JsonSerializer<Arena>, JsonDeserializer<
         obj.addProperty("y2", arena.getY2());
         obj.addProperty("z1", arena.getZ1());
         obj.addProperty("z2", arena.getZ2());
+        obj.addProperty("maxWoolTowerHeight", arena.getMaxWoolTowerHeight());
 
         if (arena.getBlueSpawn() != null) obj.add("blueSpawn", serializeLocation(arena.getBlueSpawn()));
         if (arena.getRedSpawn() != null) obj.add("redSpawn", serializeLocation(arena.getRedSpawn()));
@@ -69,6 +70,7 @@ public class ArenaSerializer implements JsonSerializer<Arena>, JsonDeserializer<
 
         Arena arena = new Arena(id, name, worldName, x1, x2, y1, y2, z1, z2);
         
+        if (obj.has("maxWoolTowerHeight")) arena.setMaxWoolTowerHeight(obj.get("maxWoolTowerHeight").getAsInt());
         if (obj.has("blueSpawn")) arena.setBlueSpawn(deserializeLocation(obj.get("blueSpawn")));
         if (obj.has("redSpawn")) arena.setRedSpawn(deserializeLocation(obj.get("redSpawn")));
         if (obj.has("specSpawn")) arena.setSpecSpawn(deserializeLocation(obj.get("specSpawn")));

@@ -2,6 +2,7 @@ dependencies {
     implementation project(':common')
 
     compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+    compileOnly 'me.clip:placeholderapi:2.12.2'
     implementation 'redis.clients:jedis:5.1.0'
 
     // OkHttp pour l'API Pterodactyl

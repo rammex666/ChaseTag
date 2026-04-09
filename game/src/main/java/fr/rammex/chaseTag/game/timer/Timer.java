@@ -50,11 +50,12 @@ public class Timer {
      * Arrête le timer
      */
     public void stop() {
+        boolean finished = isFinished();
         this.running = false;
         this.paused = false;
         this.pausedTimeMillis = 0;
         // Exécuter le callback si le timer est fini
-        if (isFinished() && finishedCallback != null) {
+        if (finished && finishedCallback != null) {
             finishedCallback.run();
         }
     }

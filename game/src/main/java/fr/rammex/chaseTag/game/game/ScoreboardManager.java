@@ -8,6 +8,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.scoreboard.*;
 
 import java.util.HashMap;
@@ -70,10 +71,9 @@ public class ScoreboardManager {
         }
 
         objective.getScore(" ").setScore(4);
-        objective.getScore("§fTemps: §a" + timeStr).setScore(3);
-        objective.getScore("§fRôle: " + roleStr).setScore(2);
-        objective.getScore("§7-----------------").setScore(1);
-        objective.getScore("§eplay.chasetag.fr").setScore(0);
+        objective.getScore("§fTemps: §a" + timeStr).setScore(2);
+        objective.getScore("§fRôle: " + roleStr).setScore(1);
+        objective.getScore("§7-----------------").setScore(0);
     }
 
     public void updateActionBar(org.bukkit.entity.Player player) {
@@ -83,8 +83,22 @@ public class ScoreboardManager {
         Timer timer = plugin.getTimerManager().getTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
         if (timer != null) {
             String timeStr = timer.getFormattedTimeRemaining();
-            player.sendActionBar(Component.text("§fTemps restant: §a" + timeStr, NamedTextColor.WHITE));
+            player.sendActionBar(Component.text("§fTemps restant: §a" + timeStr+ "§f ♛ Distance: §a"+getPlayersDistance(player)+"m", NamedTextColor.WHITE));
         }
+    }
+
+    private String getPlayersDistance(org.bukkit.entity.Player player){
+        org.bukkit.entity.Player otherPlayer = null;
+        for(Player p : plugin.getGameManager().getGame().getPlayers()){
+            if(!p.getPlayerUUID().equals(player.getUniqueId().toString())){
+                otherPlayer = p.getBukkitPlayer();
+                break;
+            }
+        }
+
+        if (otherPlayer == null) return "0";
+
+        return String.valueOf((int) Math.round(player.getLocation().distance(otherPlayer.getLocation())));
     }
 
     public void removePlayer(org.bukkit.entity.Player player) {

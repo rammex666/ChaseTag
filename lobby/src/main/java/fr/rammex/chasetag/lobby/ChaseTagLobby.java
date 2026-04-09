@@ -2,8 +2,11 @@ package fr.rammex.chasetag.lobby;
 
 import fr.rammex.chasetag.lobby.command.PlayCommand;
 import fr.rammex.chasetag.lobby.game.GameManager;
+import fr.rammex.chasetag.lobby.listener.LobbyListener;
+import fr.rammex.chasetag.lobby.menu.MenuListener;
 import fr.rammex.chasetag.lobby.pterodactyl.PterodactylClient;
 import fr.rammex.chasetag.lobby.redis.LobbyRedisListener;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -61,6 +64,10 @@ public final class ChaseTagLobby extends JavaPlugin {
 
         // Commandes
         getCommand("chasetag").setExecutor(new PlayCommand(this));
+
+        // Listeners
+        Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new MenuListener(), this);
 
         getLogger().info("ChaseTagLobby activé.");
     }

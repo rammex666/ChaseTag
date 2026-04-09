@@ -15,6 +15,7 @@ public class Arena {
     private Location blueSpawn;
     private Location redSpawn;
     private Location specSpawn;
+    private int maxWoolTowerHeight = 5;
 
     public Arena(String id, String name, String worldName, double x1, double x2, double y1, double y2, double z1, double z2){
         this.id = id;
@@ -128,5 +129,13 @@ public class Arena {
 
     public Location getSpecSpawn() {
         return specSpawn;
+    }
+
+    public int getMaxWoolTowerHeight() {
+        return maxWoolTowerHeight;
+    }
+
+    public void setMaxWoolTowerHeight(int maxWoolTowerHeight) {
+        this.maxWoolTowerHeight = maxWoolTowerHeight;
     }
 }

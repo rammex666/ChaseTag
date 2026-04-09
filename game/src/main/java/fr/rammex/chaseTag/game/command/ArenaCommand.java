@@ -57,6 +57,14 @@ public class ArenaCommand implements CommandExecutor {
                 handleSetSpawn(player, args[1], args[2]);
                 break;
 
+            case "settowerheight":
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "Usage: /arena settowerheight <id> <height>");
+                    return true;
+                }
+                handleSetTowerHeight(player, args[1], args[2]);
+                break;
+
             case "remove":
                 if (args.length < 2) {
                     player.sendMessage(ChatColor.RED + "Usage: /arena remove <id>");
@@ -118,11 +126,29 @@ public class ArenaCommand implements CommandExecutor {
         ArenaManager.save();
     }
 
+    private void handleSetTowerHeight(Player player, String id, String heightStr) {
+        Arena arena = ArenaManager.getArena(id);
+        if (arena == null) {
+            player.sendMessage(ChatColor.RED + "Arène introuvable.");
+            return;
+        }
+
+        try {
+            int height = Integer.parseInt(heightStr);
+            arena.setMaxWoolTowerHeight(height);
+            player.sendMessage(ChatColor.GREEN + "Hauteur maximale des tours en laine pour l'arène " + id + " fixée à " + height + ".");
+            ArenaManager.save();
+        } catch (NumberFormatException e) {
+            player.sendMessage(ChatColor.RED + "Hauteur invalide. Veuillez entrer un nombre entier.");
+        }
+    }
+
     private void sendHelp(Player player) {
         player.sendMessage(ChatColor.GOLD + "--- Commandes d'Arène ---");
         player.sendMessage(ChatColor.YELLOW + "/arena tool - Obtenir l'outil de sélection");
         player.sendMessage(ChatColor.YELLOW + "/arena create <id> <name> - Créer l'arène à partir de la sélection");
         player.sendMessage(ChatColor.YELLOW + "/arena setspawn <id> <blue|red|spec> - Définir un point de spawn");
+        player.sendMessage(ChatColor.YELLOW + "/arena settowerheight <id> <height> - Définir la hauteur max des tours en laine");
         player.sendMessage(ChatColor.YELLOW + "/arena remove <id> - Supprimer une arène");
     }
 }
