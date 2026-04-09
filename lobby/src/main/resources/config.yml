@@ -7,3 +7,7 @@ pterodactyl:
   url: https://panel.ton-domaine.fr
   api-key: ptla_XXXXXXXXXXXX
   egg-id: 5
+
+mongodb:
+  uri: "mongodb://localhost:27017"
+  database: "chasetag"

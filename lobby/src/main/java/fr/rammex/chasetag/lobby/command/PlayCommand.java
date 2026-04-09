@@ -2,6 +2,10 @@ package fr.rammex.chasetag.lobby.command;
 
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.game.GameSession;
+import fr.rammex.chasetag.lobby.player.PlayerManager;
+import fr.rammex.chasetag.lobby.player.rank.Rank;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -45,9 +49,27 @@ public class PlayCommand implements CommandExecutor {
                 handleSpectate(player, args[1]);
             }
             case "list" -> handleList(player);
+            case "setgrade" -> {
+                if (args.length < 3) {
+                    player.sendMessage("§cUsage: /chasetag setgrade <id> <player>");
+                    return true;
+                }
+                handleSetGrade(Bukkit.getPlayer(args[2]),player, args[1]);
+            }
             default -> player.sendMessage("§cSous-commande inconnue.");
         }
         return true;
+    }
+
+    private void handleSetGrade(Player player,Player toChange, String id){
+        if(Rank.getRoleFromID(id) != null){
+            fr.rammex.chasetag.lobby.player.Player playerProfil = PlayerManager.getPlayer(player.getUniqueId().toString());
+            Rank rank = Rank.getRoleFromID(id);
+            playerProfil.setPlayerRole(rank);
+            toChange.sendMessage(ChatColor.GREEN+"Grade changé avec succès !");
+        } else {
+            toChange.sendMessage(ChatColor.RED+"ID Iconnu");
+        }
     }
 
     private void handleCreate(Player player) {

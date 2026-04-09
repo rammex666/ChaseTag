@@ -1,9 +1,12 @@
 package fr.rammex.chasetag.lobby;
 
 import fr.rammex.chasetag.lobby.command.PlayCommand;
+import fr.rammex.chasetag.lobby.database.MongoManager;
 import fr.rammex.chasetag.lobby.game.GameManager;
 import fr.rammex.chasetag.lobby.listener.LobbyListener;
 import fr.rammex.chasetag.lobby.menu.MenuListener;
+import fr.rammex.chasetag.lobby.player.PlayerManager;
+import fr.rammex.chasetag.lobby.player.events.PlayerLobbyEvents;
 import fr.rammex.chasetag.lobby.pterodactyl.PterodactylClient;
 import fr.rammex.chasetag.lobby.redis.LobbyRedisListener;
 import org.bukkit.Bukkit;
@@ -15,6 +18,7 @@ public final class ChaseTagLobby extends JavaPlugin {
 
     private static ChaseTagLobby instance;
     private JedisPool jedisPool;
+    private MongoManager mongoManager;
     private PterodactylClient pterodactylClient;
     private GameManager gameManager;
     private LobbyRedisListener redisListener;
@@ -23,6 +27,12 @@ public final class ChaseTagLobby extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+
+        // MongoDB
+        this.mongoManager = new MongoManager(
+            getConfig().getString("mongodb.uri", "mongodb://localhost:27017"),
+            getConfig().getString("mongodb.database", "chasetag")
+        );
 
         // Redis
         JedisPoolConfig poolConfig = new JedisPoolConfig();
@@ -62,12 +72,15 @@ public final class ChaseTagLobby extends JavaPlugin {
         this.redisListener = new LobbyRedisListener(this);
         this.redisListener.start();
 
+        PlayerManager.init(this.getDataFolder());
+
         // Commandes
         getCommand("chasetag").setExecutor(new PlayCommand(this));
 
         // Listeners
         Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);
         Bukkit.getPluginManager().registerEvents(new MenuListener(), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerLobbyEvents(), this);
 
         getLogger().info("ChaseTagLobby activé.");
     }
@@ -76,11 +89,14 @@ public final class ChaseTagLobby extends JavaPlugin {
     public void onDisable() {
         if (redisListener != null) redisListener.stop();
         if (jedisPool != null) jedisPool.close();
+        if (mongoManager != null) mongoManager.close();
+        PlayerManager.save();
         getLogger().info("ChaseTagLobby désactivé.");
     }
 
     public static ChaseTagLobby getInstance() { return instance; }
     public JedisPool getJedisPool() { return jedisPool; }
+    public MongoManager getMongoManager() { return mongoManager; }
     public PterodactylClient getPterodactylClient() { return pterodactylClient; }
     public GameManager getGameManager() { return gameManager; }
 }
