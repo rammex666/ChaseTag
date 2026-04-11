@@ -45,9 +45,29 @@ public final class ChaseTag extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
 
-        this.serverId = getConfig().getString("server-id", "game-1");
-        this.host = getConfig().getString("host", "localhost");
-        this.port = getConfig().getInt("port", 25565);
+        String envServerId = System.getenv("GAME_ID");
+        this.serverId = envServerId != null && !envServerId.isBlank()
+            ? envServerId
+            : getConfig().getString("server-id", "game-1");
+
+        String envHost = System.getenv("GAME_HOST");
+        this.host = envHost != null && !envHost.isBlank()
+            ? envHost
+            : getConfig().getString("host", "localhost");
+
+        String envPort = System.getenv("GAME_PORT");
+        if (envPort != null && !envPort.isBlank()) {
+            try {
+                this.port = Integer.parseInt(envPort);
+            } catch (NumberFormatException e) {
+                getLogger().warning("GAME_PORT invalide : " + envPort + ", utilisation du port de config");
+                this.port = getConfig().getInt("port", 25565);
+            }
+        } else {
+            this.port = getConfig().getInt("port", 25565);
+        }
+
+        getLogger().info("Game startup: serverId=" + serverId + ", host=" + host + ", port=" + port + " (env GAME_ID=" + envServerId + ", GAME_HOST=" + envHost + ", GAME_PORT=" + envPort + ")");
 
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(10);

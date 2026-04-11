@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.velocity.config;
+package fr.rammex.chasetag.velocity.config;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -44,5 +44,9 @@ public class VelocityConfig {
 
     public String getLobbyServerName() {
         return props.getProperty("lobby.server-name", "lobby");
+    }
+
+    public String getExternalHost() {
+        return props.getProperty("server.external-host", "");
     }
 }

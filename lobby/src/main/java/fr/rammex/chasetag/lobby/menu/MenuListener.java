@@ -2,6 +2,7 @@ package fr.rammex.chasetag.lobby.menu;
 
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.menu.BracketMenu;
+import fr.rammex.chasetag.lobby.menu.MapSelectionMenu;
 import fr.rammex.chasetag.lobby.tournament.TournamentManager;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -30,6 +31,10 @@ public class MenuListener implements Listener {
 
         if (holder instanceof Menu) {
             event.setCancelled(true);
+            if (holder instanceof MapSelectionMenu mapSelectionMenu) {
+                mapSelectionMenu.handleClick(event);
+                return;
+            }
             String title = PlainTextComponentSerializer.plainText().serialize(event.getView().title());
             TournamentManager tournamentManager = ChaseTagLobby.getInstance().getTournamentManager();
 
@@ -132,6 +137,18 @@ public class MenuListener implements Listener {
             return;
         }
 
+        if (displayName.equals(ChatColor.AQUA + "Choisir la map")) {
+            Integer matchId = selectedMatch.get(player.getUniqueId());
+            String selectedPhase = selectedMatchPhase.get(player.getUniqueId());
+            Integer selectedPoule = selectedPool.get(player.getUniqueId());
+            if (matchId == null || selectedPhase == null || selectedPoule == null) {
+                player.sendMessage(ChatColor.RED + "Sélectionnez d'abord un match.");
+                return;
+            }
+            new MapSelectionMenu(player, ChaseTagLobby.getInstance(), tournamentManager, selectedPhase, selectedPoule, matchId).open();
+            return;
+        }
+
         int poule = 0;
         try {
             poule = Integer.parseInt(title.replace("Poule ", ""));
@@ -188,6 +205,17 @@ public class MenuListener implements Listener {
             new TournamentAdminMenu(player, tournamentManager).open();
             selectedMatch.remove(player.getUniqueId());
             selectedMatchPhase.remove(player.getUniqueId());
+            return;
+        }
+
+        if (displayName.equals(ChatColor.AQUA + "Choisir la map")) {
+            Integer matchId = selectedMatch.get(player.getUniqueId());
+            String selectedPhase = selectedMatchPhase.get(player.getUniqueId());
+            if (matchId == null || selectedPhase == null) {
+                player.sendMessage(ChatColor.RED + "Sélectionnez d'abord un match.");
+                return;
+            }
+            new MapSelectionMenu(player, ChaseTagLobby.getInstance(), tournamentManager, selectedPhase, 0, matchId).open();
             return;
         }
 

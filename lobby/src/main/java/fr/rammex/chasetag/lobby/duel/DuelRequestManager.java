@@ -4,18 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DuelRequestManager {
-    private final Map<String, String> pendingRequests = new HashMap<>();
+    private final Map<String, DuelRequest> pendingRequests = new HashMap<>();
 
     public boolean hasPendingRequestFor(String targetName) {
         return pendingRequests.containsKey(targetName);
     }
 
-    public String getRequesterFor(String targetName) {
+    public DuelRequest getRequestFor(String targetName) {
         return pendingRequests.get(targetName);
     }
 
-    public void createRequest(String requesterName, String targetName) {
-        pendingRequests.put(targetName, requesterName);
+    public void createRequest(String requesterName, String targetName, int eggId, String mapName) {
+        pendingRequests.put(targetName, new DuelRequest(requesterName, targetName, eggId, mapName));
     }
 
     public void removeRequest(String targetName) {
@@ -23,6 +23,6 @@ public class DuelRequestManager {
     }
 
     public void cancelRequest(String requesterName) {
-        pendingRequests.values().removeIf(value -> value.equals(requesterName));
+        pendingRequests.values().removeIf(value -> value.getRequesterName().equals(requesterName));
     }
 }

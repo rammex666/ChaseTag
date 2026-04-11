@@ -1,8 +1,8 @@
-package fr.rammex.chaseTag.velocity.listener;
+package fr.rammex.chasetag.velocity.listener;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
-import fr.rammex.chaseTag.velocity.ChaseTagVelocity;
+import fr.rammex.chasetag.velocity.ChaseTagVelocity;
 
 public class PlayerConnectionListener {
 

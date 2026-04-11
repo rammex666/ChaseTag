@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BracketMenu extends Menu {
@@ -44,13 +45,18 @@ public class BracketMenu extends Menu {
             org.bukkit.entity.Player onlinePlayer2 = player2Name == null ? null : Bukkit.getPlayerExact(player2Name);
             String player1 = onlinePlayer1 != null ? onlinePlayer1.getName() : match.getPlayer1String();
             String player2 = onlinePlayer2 != null ? onlinePlayer2.getName() : match.getPlayer2String();
+            List<String> matchLore = new ArrayList<>();
+            matchLore.add(ChatColor.GRAY + player1 + " vs " + player2);
+            matchLore.add(ChatColor.GRAY + "Map: " + (match.hasMap() ? match.getMapName() : "Aucune"));
+            if (match.hasMap() && match.getPlayer1() != null && match.getPlayer2() != null) {
+                matchLore.add(ChatColor.GREEN + "Prêt à démarrer");
+            } else {
+                matchLore.add(ChatColor.GRAY + "Clic pour reconfigurer");
+            }
             ItemStack matchItem = MenuUtils.createMenuItem(
                     Material.YELLOW_CONCRETE,
                     ChatColor.GOLD + "Match " + match.getMatchId(),
-                    List.of(
-                            ChatColor.GRAY + player1 + " vs " + player2,
-                            ChatColor.GRAY + "Clic pour reconfigurer"
-                    )
+                    matchLore
             );
             if (matchSlot < 53) {
                 inventory.setItem(matchSlot, matchItem);
@@ -74,6 +80,13 @@ public class BracketMenu extends Menu {
             ));
             playerSlot++;
         }
+
+        ItemStack chooseMap = MenuUtils.createMenuItem(
+                Material.MAP,
+                ChatColor.AQUA + "Choisir la map",
+                List.of(ChatColor.GRAY + "Sélectionne un match puis clique ici.")
+        );
+        inventory.setItem(49, chooseMap);
 
         ItemStack back = MenuUtils.createBackButton(ChatColor.YELLOW + "Retour", ChatColor.GRAY + "Retour au menu administrateur");
         inventory.setItem(53, back);

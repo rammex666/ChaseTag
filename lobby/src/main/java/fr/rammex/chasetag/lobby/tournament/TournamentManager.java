@@ -6,6 +6,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.database.MongoManager;
 import org.bson.Document;
+import org.bukkit.Bukkit;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -252,14 +253,59 @@ public class TournamentManager {
         }
         removePlayerFromPhaseMatches(phase, playerName);
         TournamentMatch match = getMatch(phase, pool, matchId).orElseGet(() -> createMatch(phase, pool, matchId));
+        TournamentMatch updatedMatch;
         if (match.getPlayer1() == null) {
-            replaceMatch(match, new TournamentMatch(phase, match.getPool(), matchId, playerName, match.getPlayer2String()));
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, playerName, match.getPlayer2String(), match.getEggId(), match.getMapName());
         } else if (match.getPlayer2() == null) {
-            replaceMatch(match, new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName));
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, match.getEggId(), match.getMapName());
         } else {
-            replaceMatch(match, new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName));
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, match.getEggId(), match.getMapName());
         }
+        replaceMatch(match, updatedMatch);
         save();
+        maybeStartMatch(updatedMatch);
+    }
+
+    public void setMatchMap(String phase, int pool, int matchId, int eggId, String mapName) {
+        if (phase == null || phase.isBlank()) {
+            return;
+        }
+        TournamentMatch match = getMatch(phase, pool, matchId).orElseGet(() -> createMatch(phase, pool, matchId));
+        TournamentMatch updatedMatch = new TournamentMatch(
+                phase,
+                match.getPool(),
+                matchId,
+                match.getPlayer1String(),
+                match.getPlayer2String(),
+                eggId,
+                mapName
+        );
+        replaceMatch(match, updatedMatch);
+        save();
+        maybeStartMatch(updatedMatch);
+    }
+
+    private void maybeStartMatch(TournamentMatch match) {
+        if (match == null || match.getPlayer1() == null || match.getPlayer2() == null || !match.hasMap()) {
+            return;
+        }
+        org.bukkit.entity.Player player1 = Bukkit.getPlayerExact(match.getPlayer1());
+        org.bukkit.entity.Player player2 = Bukkit.getPlayerExact(match.getPlayer2());
+        if (player1 == null || player2 == null) {
+            return;
+        }
+        if (plugin.getGameManager().getSessionByPlayer(player1.getUniqueId()) != null
+                || plugin.getGameManager().getSessionByPlayer(player2.getUniqueId()) != null) {
+            return;
+        }
+
+        var session = plugin.getGameManager().createSession(player1.getUniqueId());
+        session.setMap(match.getEggId(), match.getMapName());
+        boolean joined = plugin.getGameManager().joinSession(session.getSessionId(), player2.getUniqueId());
+        if (joined) {
+            player1.sendMessage("§aMatch de tournoi en cours de démarrage : §e" + match.getMapName());
+            player2.sendMessage("§aMatch de tournoi en cours de démarrage : §e" + match.getMapName());
+        }
     }
 
     private void removePlayerFromPhaseMatches(String phase, String playerName) {
@@ -270,13 +316,13 @@ public class TournamentManager {
             if (match.containsPlayer(playerName)) {
                 String player1 = match.getPlayer1() != null && !match.getPlayer1().equals(playerName) ? match.getPlayer1String() : "";
                 String player2 = match.getPlayer2() != null && !match.getPlayer2().equals(playerName) ? match.getPlayer2String() : "";
-                replaceMatch(match, new TournamentMatch(match.getPhase(), match.getPool(), match.getMatchId(), player1, player2));
+                replaceMatch(match, new TournamentMatch(match.getPhase(), match.getPool(), match.getMatchId(), player1, player2, match.getEggId(), match.getMapName()));
             }
         }
     }
 
     private TournamentMatch createMatch(String phase, int pool, int matchId) {
-        TournamentMatch match = new TournamentMatch(phase, pool, matchId, "", "");
+        TournamentMatch match = new TournamentMatch(phase, pool, matchId, "", "", 0, "");
         matches.add(match);
         return match;
     }

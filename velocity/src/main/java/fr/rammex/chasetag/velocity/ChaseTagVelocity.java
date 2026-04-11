@@ -1,4 +1,4 @@
-package fr.rammex.chaseTag.velocity;
+package fr.rammex.chasetag.velocity;
 
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
@@ -8,9 +8,9 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
-import fr.rammex.chaseTag.velocity.listener.PlayerConnectionListener;
-import fr.rammex.chaseTag.velocity.redis.VelocityRedisListener;
-import fr.rammex.chaseTag.velocity.config.VelocityConfig;
+import fr.rammex.chasetag.velocity.listener.PlayerConnectionListener;
+import fr.rammex.chasetag.velocity.redis.VelocityRedisListener;
+import fr.rammex.chasetag.velocity.config.VelocityConfig;
 import org.slf4j.Logger;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;

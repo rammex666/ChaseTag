@@ -29,8 +29,24 @@ public class PterodactylClient {
     }
 
     public ServerInfo createServer(String gameId) throws IOException {
+        return createServer(gameId, eggId);
+    }
+
+    public ServerInfo createServer(String gameId, int eggId) throws IOException {
+        if (eggId <= 0) {
+            eggId = this.eggId;
+        }
+
+        int allocationId = getAvailableAllocationId();
+        int port = getAllocationPort(allocationId);
+
+        String externalHost = ChaseTagLobby.getInstance()
+            .getConfig().getString("pterodactyl.external-host", "localhost");
+
         JsonObject env = new JsonObject();
         env.addProperty("GAME_ID", gameId);
+        env.addProperty("GAME_HOST", externalHost);
+        env.addProperty("GAME_PORT", port);
         env.addProperty("SERVER_JARFILE", "server.jar");
         env.addProperty("DOWNLOAD_URL", "http://play.ownedcup.fr:25599/server.tar.gz");
 
@@ -49,7 +65,7 @@ public class PterodactylClient {
         featureLimits.addProperty("allocations", 1);
 
         JsonObject allocation = new JsonObject();
-        allocation.addProperty("default", getAvailableAllocationId());
+        allocation.addProperty("default", allocationId);
 
         JsonObject body = new JsonObject();
         body.addProperty("name", "chasetag-" + gameId);
@@ -57,7 +73,7 @@ public class PterodactylClient {
         body.addProperty("user", pterodactylUserId);
         body.addProperty("docker_image", "ghcr.io/pterodactyl/yolks:java_21");
         body.addProperty("startup",
-                "java -Xms128M -XX:MaxRAMPercentage=95.0 -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}");
+                "bash start.sh");
         body.addProperty("skip_scripts", false);
         body.add("environment", env);
         body.add("limits", limits);
@@ -83,15 +99,15 @@ public class PterodactylClient {
                     .getAsJsonObject()
                     .getAsJsonObject("attributes");
 
-            // Dans createServer, récupère l'ID interne en plus de l'identifier
             String serverId = result.get("identifier").getAsString();
-            int internalId = result.get("id").getAsInt(); // ← ajoute ça
-            int port = getAllocationPort(result.get("allocation").getAsInt());
+            int internalId = result.get("id").getAsInt();
+
+            ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId + ", internalId=" + internalId + ", allocationPort=" + port + ", externalHost=" + externalHost);
 
             Bukkit.getScheduler().runTaskAsynchronously(ChaseTagLobby.getInstance(), () -> {
                 try {
-                    waitForInstallation(internalId); // ← passe l'ID interne
-                    startServer(serverId);           // ← startServer garde l'identifier string
+                    waitForInstallation(internalId);
+                    startServer(serverId);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }

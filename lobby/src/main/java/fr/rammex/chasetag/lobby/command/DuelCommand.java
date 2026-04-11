@@ -3,6 +3,8 @@ package fr.rammex.chasetag.lobby.command;
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.duel.DuelRequestManager;
 import fr.rammex.chasetag.lobby.game.GameSession;
+import fr.rammex.chasetag.lobby.menu.MapSelectionMenu;
+import fr.rammex.chasetag.lobby.duel.DuelRequest;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -37,9 +39,20 @@ public class DuelCommand implements CommandExecutor {
             case "accept" -> handleAccept(player);
             case "decline" -> handleDecline(player);
             case "cancel" -> handleCancel(player);
+            case "test", "dev", "self" -> handleTest(player);
             default -> sendUsage(player);
         }
         return true;
+    }
+
+    private void handleTest(Player player) {
+        if (!ensurePracticeMode(player)) return;
+        if (plugin.getGameManager().getSessionByPlayer(player.getUniqueId()) != null) {
+            player.sendMessage("§cVous êtes déjà dans une partie.");
+            return;
+        }
+        player.sendMessage("§aChoisis la map pour ton duel de test.");
+        new MapSelectionMenu(player, plugin, player.getName(), true).open();
     }
 
     private void handleRequest(Player player, String[] args) {
@@ -72,20 +85,19 @@ public class DuelCommand implements CommandExecutor {
             return;
         }
 
-        requestManager.createRequest(player.getName(), target.getName());
-        player.sendMessage("§aDemande de duel envoyée à §e" + target.getName() + "§a.");
-        target.sendMessage("§e" + player.getName() + "§a te propose un duel. Tape §e/duel accept§a ou §e/duel decline§a.");
+        player.sendMessage("§aChoisis la map pour le duel avec §e" + target.getName() + "§a.");
+        new MapSelectionMenu(player, plugin, target.getName()).open();
     }
 
     private void handleAccept(Player player) {
         if (!ensurePracticeMode(player)) return;
-        String requesterName = requestManager.getRequesterFor(player.getName());
-        if (requesterName == null) {
+        DuelRequest request = requestManager.getRequestFor(player.getName());
+        if (request == null) {
             player.sendMessage("§cAucune demande de duel en attente.");
             return;
         }
 
-        Player requester = Bukkit.getPlayerExact(requesterName);
+        Player requester = Bukkit.getPlayerExact(request.getRequesterName());
         if (requester == null) {
             player.sendMessage("§cLe joueur qui a demandé le duel n'est plus en ligne.");
             requestManager.removeRequest(player.getName());
@@ -103,6 +115,7 @@ public class DuelCommand implements CommandExecutor {
         }
 
         GameSession session = plugin.getGameManager().createSession(requester.getUniqueId());
+        session.setMap(request.getEggId(), request.getMapName());
         boolean joined = plugin.getGameManager().joinSession(session.getSessionId(), player.getUniqueId());
         if (!joined) {
             player.sendMessage("§cImpossible de rejoindre la partie.");
@@ -112,21 +125,21 @@ public class DuelCommand implements CommandExecutor {
         }
 
         requestManager.removeRequest(player.getName());
-        requester.sendMessage("§aVotre duel avec §e" + player.getName() + "§a est accepté ! Serveur en cours de démarrage...");
-        player.sendMessage("§aDuel accepté ! Serveur en cours de démarrage...");
+        requester.sendMessage("§aVotre duel avec §e" + player.getName() + "§a est accepté ! Serveur en cours de démarrage...\n§aMap: §e" + request.getMapName());
+        player.sendMessage("§aDuel accepté ! Serveur en cours de démarrage...\n§aMap: §e" + request.getMapName());
     }
 
     private void handleDecline(Player player) {
         if (!ensurePracticeMode(player)) return;
-        if (!requestManager.hasPendingRequestFor(player.getName())) {
+        DuelRequest request = requestManager.getRequestFor(player.getName());
+        if (request == null) {
             player.sendMessage("§cAucune demande de duel à refuser.");
             return;
         }
 
-        String requesterName = requestManager.getRequesterFor(player.getName());
         requestManager.removeRequest(player.getName());
         player.sendMessage("§eDemande de duel refusée.");
-        Player requester = Bukkit.getPlayerExact(requesterName);
+        Player requester = Bukkit.getPlayerExact(request.getRequesterName());
         if (requester != null) {
             requester.sendMessage("§cVotre demande de duel a été refusée par §e" + player.getName() + "§c.");
         }
@@ -143,6 +156,7 @@ public class DuelCommand implements CommandExecutor {
         player.sendMessage("§e/duel accept §7- Accepter une demande de duel");
         player.sendMessage("§e/duel decline §7- Refuser une demande de duel");
         player.sendMessage("§e/duel cancel §7- Annuler vos demandes en attente");
+        player.sendMessage("§e/duel test §7- Lancer un duel solo de test et t'inviter toi-même");
     }
 
     private boolean ensurePracticeMode(Player player) {

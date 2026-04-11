@@ -6,7 +6,18 @@ redis:
 pterodactyl:
   url: https://panel.ton-domaine.fr
   api-key: ptla_XXXXXXXXXXXX
+  external-host: 141.11.114.30
   egg-id: 5
+  maps:
+    - name: "Classic"
+      egg-id: 5
+      mode: "both"
+    - name: "Map rapide"
+      egg-id: 6
+      mode: "practice"
+    - name: "Map fun"
+      egg-id: 7
+      mode: "tournament"
 
 mongodb:
   uri: "mongodb://localhost:27017"

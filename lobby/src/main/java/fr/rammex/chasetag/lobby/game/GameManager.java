@@ -30,6 +30,16 @@ public class GameManager {
         return session;
     }
 
+    public void createSoloSession(UUID playerUuid, int eggId, String mapName) {
+        if (getSessionByPlayer(playerUuid) != null) {
+            return;
+        }
+        GameSession session = createSession(playerUuid);
+        session.setMap(eggId, mapName);
+        session.setStatus(GameSession.Status.STARTING);
+        spawnServer(session);
+    }
+
     // Rejoindre en tant que joueur (appelé par /chasetag join <id>)
     public boolean joinSession(String sessionId, UUID playerUuid) {
         GameSession session = sessions.get(sessionId);
@@ -66,11 +76,11 @@ public class GameManager {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 PterodactylClient.ServerInfo info = plugin.getPterodactylClient()
-                    .createServer(session.getSessionId());
+                    .createServer(session.getSessionId(), session.getEggId());
 
-                session.setPterodactylServerId(info.serverId());
+                session.setSessionId(session.getSessionId());
                 session.setPort(info.port());
-
+                session.setPterodactylInternalId(info.serverId());
                 // Stocker dans Redis
                 try (Jedis jedis = plugin.getJedisPool().getResource()) {
                     jedis.hset(RedisChannel.SERVERS_MAP, info.serverId(),
@@ -101,7 +111,7 @@ public class GameManager {
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                     // Kill le serveur Pterodactyl
                     try {
-                        plugin.getPterodactylClient().deleteServer(pterodactylServerId);
+                        plugin.getPterodactylClient().deleteServer(session.getPterodactylInternalId());
                     } catch (Exception e) {
                         plugin.getLogger().severe("Erreur kill serveur : " + e.getMessage());
                     }

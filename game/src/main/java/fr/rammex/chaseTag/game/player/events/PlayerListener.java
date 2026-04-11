@@ -50,16 +50,16 @@ public class PlayerListener implements Listener {
             player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
         }
 
-        if (player.hasPermission("chasetag.staff")) {
-            player.sendMessage("§b[Staff] §fVous avez rejoint en tant que membre du staff.");
-            player.setGameMode(GameMode.SPECTATOR);
-            Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
-            if (currentGame != null) {
-                currentGame.getSpectators().add(player1);
-                player.teleport(currentGame.getArena().getSpecSpawn());
+            if (player.hasPermission("chasetag.staff")) {
+                player.sendMessage("§b[Staff] §fVous avez rejoint en tant que membre du staff.");
+                player.setGameMode(GameMode.SPECTATOR);
+                Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
+                if (currentGame != null) {
+                    currentGame.getSpectators().add(player1);
+                    player.teleport(currentGame.getArena().getSpecSpawn());
+                }
+                return;
             }
-            return;
-        }
 
         Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
         
@@ -75,34 +75,44 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        long nonStaffCount = Bukkit.getOnlinePlayers().stream().filter(p -> !p.hasPermission("chasetag.staff")).count();
-        if (nonStaffCount == 2 && ChaseTag.getInstance().getGameManager().getGame() == null) {
-            Arena arena = ChaseTag.getInstance().getArenaManager().getAll().values().stream().findFirst().orElse(null);
-            if (arena != null) {
-                Game game = new Game(ChaseTag.getInstance().getServerId(), arena);
-                
-                List<Player> activePlayers = Bukkit.getOnlinePlayers().stream()
-                        .filter(p -> !p.hasPermission("chasetag.staff"))
-                        .limit(2)
-                        .map(p -> PlayerManager.getPlayer(p.getUniqueId().toString()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                
-                List<Player> spectators = Bukkit.getOnlinePlayers().stream()
-                        .filter(p -> p.hasPermission("chasetag.staff") || !activePlayers.stream().anyMatch(ap -> ap.getPlayerUUID().equals(p.getUniqueId().toString())))
-                        .map(p -> PlayerManager.getPlayer(p.getUniqueId().toString()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                
-                game.setPlayers(activePlayers);
-                game.setSpectators(spectators);
-                ChaseTag.getInstance().getGameManager().initGame(game);
-
-                Bukkit.getScheduler().runTaskLater(ChaseTag.getInstance(), () -> {
-                    ChaseTag.getInstance().getGameManager().startGame();
-                }, 100L); 
+        Bukkit.getScheduler().runTaskLater(ChaseTag.getInstance(), () -> {
+        long nonStaffCount = Bukkit.getOnlinePlayers().stream()
+            .filter(p -> !p.hasPermission("chasetag.staff")).count();
+        
+        if (nonStaffCount >= 2 && ChaseTag.getInstance().getGameManager().getGame() == null) {
+            Arena arena = ChaseTag.getInstance().getArenaManager().getAll().values()
+                .stream().findFirst().orElse(null);
+            if (arena == null) {
+                player.sendMessage("§cAucune arène disponible !");
+                return;
             }
+
+            List<Player> activePlayers = Bukkit.getOnlinePlayers().stream()
+                .filter(p -> !p.hasPermission("chasetag.staff"))
+                .limit(2)
+                .map(p -> PlayerManager.getPlayer(p.getUniqueId().toString()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            if (activePlayers.size() < 2) return;
+
+            Game game = new Game(ChaseTag.getInstance().getServerId(), arena);
+            game.setPlayers(activePlayers);
+
+            List<Player> spectators = Bukkit.getOnlinePlayers().stream()
+                .filter(p -> p.hasPermission("chasetag.staff"))
+                .map(p -> PlayerManager.getPlayer(p.getUniqueId().toString()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            game.setSpectators(spectators);
+
+            ChaseTag.getInstance().getGameManager().initGame(game);
+            
+            Bukkit.getScheduler().runTaskLater(ChaseTag.getInstance(), () -> {
+                ChaseTag.getInstance().getGameManager().startGame();
+            }, 60L);
         }
+    }, 5L); // 5 ticks = laisser le temps au joueur d'être enregistré   
     }
 
     @EventHandler

@@ -1,10 +1,10 @@
-package fr.rammex.chaseTag.velocity.redis;
+package fr.rammex.chasetag.velocity.redis;
 
 import fr.rammex.chasetag.common.MessageSerializer;
 import fr.rammex.chasetag.common.RedisChannel;
 import fr.rammex.chasetag.common.message.GameEndMessage;
 import fr.rammex.chasetag.common.message.ServerReadyMessage;
-import fr.rammex.chaseTag.velocity.ChaseTagVelocity;
+import fr.rammex.chasetag.velocity.ChaseTagVelocity;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
@@ -40,7 +40,8 @@ public class VelocityRedisListener {
             try (Jedis jedis = plugin.getJedisPool().getResource()) {
                 jedis.subscribe(pubSub,
                     RedisChannel.SEND_TO_LOBBY,
-                    RedisChannel.GAME_END
+                    RedisChannel.GAME_END,
+                    RedisChannel.SERVER_READY
                 );
             } catch (Exception e) {
                 plugin.getLogger().error("Redis listener erreur : " + e.getMessage());
@@ -97,7 +98,35 @@ public class VelocityRedisListener {
 
     private void handleServerReady(String message) {
                     ServerReadyMessage msg = MessageSerializer.deserialize(message, ServerReadyMessage.class);
-                    // Enregistrer le serveur dans Velocity
-                    plugin.registerGameServer(msg.getServerId(), msg.getHost(), msg.getPort());
-                } 
+                    String host = msg.getHost();
+                    int port = msg.getPort();
+                    String externalHost = plugin.getConfig().getExternalHost();
+                    if (externalHost != null && !externalHost.isBlank()) {
+                        if (host == null || host.isBlank()
+                                || host.equalsIgnoreCase("localhost")
+                                || host.equals("127.0.0.1")
+                                || host.equals("0.0.0.0")) {
+                            host = externalHost;
+                        }
+                    }
+
+                    boolean usedFallbackPort = false;
+                    if (port <= 0 || port == 25565) {
+                        try (Jedis jedis = plugin.getJedisPool().getResource()) {
+                            String storedPort = jedis.hget(RedisChannel.SERVERS_PORT, msg.getServerId());
+                            if (storedPort != null && !storedPort.isBlank()) {
+                                try {
+                                    port = Integer.parseInt(storedPort);
+                                    usedFallbackPort = true;
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                        } catch (Exception e) {
+                            plugin.getLogger().warn("Impossible de récupérer le port réel depuis Redis pour " + msg.getServerId() + ": " + e.getMessage());
+                        }
+                    }
+
+                    plugin.getLogger().info("SERVER_READY reçu: id=" + msg.getServerId() + ", host=" + msg.getHost() + ", port=" + msg.getPort() + ", resolvedHost=" + host + ", resolvedPort=" + port + ", fallbackPort=" + usedFallbackPort);
+                    plugin.registerGameServer(msg.getServerId(), host, port);
+                }
 }

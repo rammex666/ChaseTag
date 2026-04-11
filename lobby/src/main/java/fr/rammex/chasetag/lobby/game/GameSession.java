@@ -8,12 +8,14 @@ public class GameSession {
 
     public enum Status { WAITING, STARTING, PLAYING, ENDING }
 
-    private final String sessionId;
+    private String sessionId;
     private final UUID ownerUuid;
     private final List<UUID> players = new ArrayList<>();
     private final List<UUID> spectators = new ArrayList<>();
-    private String pterodactylServerId;
+    private String pterodactylInternalId; // identifier Pterodactyl (pour delete)
     private int port;
+    private int eggId = -1;
+    private String mapName = "";
     private Status status = Status.WAITING;
 
     public GameSession(String sessionId, UUID ownerUuid) {
@@ -38,10 +40,27 @@ public class GameSession {
     public UUID getOwnerUuid() { return ownerUuid; }
     public List<UUID> getPlayers() { return players; }
     public List<UUID> getSpectators() { return spectators; }
-    public String getPterodactylServerId() { return pterodactylServerId; }
-    public void setPterodactylServerId(String id) { this.pterodactylServerId = id; }
+
+    // Pour le matching Redis — on utilise le sessionId directement
+    public String getPterodactylServerId() { return sessionId; }
+
+    // Identifier Pterodactyl (ex: "75ff9a73") — uniquement pour l'API delete/start
+    public String getPterodactylInternalId() { return pterodactylInternalId; }
+    public void setPterodactylInternalId(String id) { this.pterodactylInternalId = id; }
+
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+
     public int getPort() { return port; }
     public void setPort(int port) { this.port = port; }
+
+    public int getEggId() { return eggId; }
+    public String getMapName() { return mapName; }
+    public void setMap(int eggId, String mapName) {
+        this.eggId = eggId;
+        this.mapName = mapName == null ? "" : mapName;
+    }
+    public boolean hasMap() { return eggId > 0; }
+
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
 }
