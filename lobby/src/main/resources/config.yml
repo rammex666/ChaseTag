@@ -11,3 +11,31 @@ pterodactyl:
 mongodb:
   uri: "mongodb://localhost:27017"
   database: "chasetag"
+
+tournament:
+  phases:
+    - name: "Phase 1"
+      type: "poule"
+      pouleCount: 8
+      playersPerPoule: 4
+    - name: "Phase 2"
+      type: "poule"
+      pouleCount: 8
+      playersPerPoule: 4
+    - name: "Phase 3"
+      type: "poule"
+      pouleCount: 8
+      playersPerPoule: 4
+    - name: "Phase 4"
+      type: "poule"
+      pouleCount: 8
+      playersPerPoule: 4
+    - name: "8ème de finale"
+      type: "bracket"
+      bracketSize: 16
+    - name: "Demi-finale"
+      type: "bracket"
+      bracketSize: 4
+    - name: "Final"
+      type: "bracket"
+      bracketSize: 2

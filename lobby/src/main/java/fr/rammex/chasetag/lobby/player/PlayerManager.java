@@ -49,12 +49,25 @@ public class PlayerManager {
         return players.get(id);
     }
 
+    public static Player getPlayerByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        return players.values().stream()
+                .filter(player -> name.equalsIgnoreCase(player.getPlayerName()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public static void removePlayer(String id) {
         players.remove(id);
         save();
     }
 
     public static void save() {
+        if (file == null || gson == null) {
+            return;
+        }
         try (Writer writer = new FileWriter(file)) {
             gson.toJson(players, writer);
         } catch (IOException e) {
@@ -63,6 +76,9 @@ public class PlayerManager {
     }
 
     public static void load() {
+        if (file == null || gson == null) {
+            return;
+        }
         try (Reader reader = new FileReader(file)) {
             Type type = new TypeToken<Map<String, Player>>() {}.getType();
             Map<String, Player> data = gson.fromJson(reader, type);

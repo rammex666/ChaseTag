@@ -27,7 +27,6 @@ public class GameManager {
         sessions.put(sessionId, session);
         playerSession.put(ownerUuid, sessionId);
         plugin.getLogger().info("Session créée : " + sessionId + " par " + ownerUuid);
-        spawnServer(session);
         return session;
     }
 

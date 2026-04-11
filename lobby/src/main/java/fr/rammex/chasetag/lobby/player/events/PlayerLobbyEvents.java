@@ -2,6 +2,7 @@ package fr.rammex.chasetag.lobby.player.events;
 
 import fr.rammex.chasetag.lobby.player.Player;
 import fr.rammex.chasetag.lobby.player.PlayerManager;
+import fr.rammex.chasetag.lobby.player.PlayerMongoRepository;
 import fr.rammex.chasetag.lobby.player.rank.Rank;
 import fr.rammex.chasetag.lobby.utils.ColorUtils;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -19,6 +20,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 public class PlayerLobbyEvents implements Listener {
+    private final PlayerMongoRepository playerMongoRepository;
+
+    public PlayerLobbyEvents(PlayerMongoRepository playerMongoRepository) {
+        this.playerMongoRepository = playerMongoRepository;
+    }
 
     @EventHandler
     public void onPlayerMessage(AsyncChatEvent event){
@@ -47,19 +53,21 @@ public class PlayerLobbyEvents implements Listener {
     @EventHandler
     public void onPlayerJoinFirstTime(PlayerJoinEvent event){
         org.bukkit.entity.Player player = event.getPlayer();
-        if(!player.hasPlayedBefore()){
-            Player playerRegistry = new Player(player.getUniqueId().toString(), Rank.Joueur);
-            PlayerManager.addPlayer(playerRegistry);
+        Player stored = PlayerManager.getPlayer(player.getUniqueId().toString());
+        if (stored == null) {
+            stored = PlayerManager.getPlayerByName(player.getName());
+        }
+
+        if (stored == null) {
+            stored = new Player(player.getUniqueId().toString(), player.getName(), Rank.Joueur);
+            PlayerManager.addPlayer(stored);
+        } else if (!player.getName().equals(stored.getPlayerName())) {
+            stored.setPlayerName(player.getName());
             PlayerManager.save();
         }
 
-
-        Player player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
-
-        if(player1 == null){
-            Player playerRegistry = new Player(player.getUniqueId().toString(), Rank.Joueur);
-            PlayerManager.addPlayer(playerRegistry);
-            PlayerManager.save();
+        if (playerMongoRepository != null) {
+            playerMongoRepository.savePlayer(stored);
         }
     }
 }

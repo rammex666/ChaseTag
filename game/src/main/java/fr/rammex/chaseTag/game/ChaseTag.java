@@ -141,6 +141,8 @@ public final class ChaseTag extends JavaPlugin {
         return gameManager;
     }
 
+    
+
     public ScoreboardManager getScoreboardManager() {
         return scoreboardManager;
     }

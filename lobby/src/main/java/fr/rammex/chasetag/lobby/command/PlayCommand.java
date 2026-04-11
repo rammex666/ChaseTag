@@ -73,6 +73,10 @@ public class PlayCommand implements CommandExecutor {
     }
 
     private void handleCreate(Player player) {
+        if (!plugin.getTournamentManager().isPracticeMode()) {
+            player.sendMessage("§cLe mode Duel / Pratique est désactivé. Demandez à un administrateur d'activer le mode pratique.");
+            return;
+        }
         if (plugin.getGameManager().getSessionByPlayer(player.getUniqueId()) != null) {
             player.sendMessage("§cTu es déjà dans une partie.");
             return;
@@ -83,6 +87,10 @@ public class PlayCommand implements CommandExecutor {
     }
 
     private void handleJoin(Player player, String sessionId) {
+        if (!plugin.getTournamentManager().isPracticeMode()) {
+            player.sendMessage("§cLe mode Duel / Pratique est désactivé. Demandez à un administrateur d'activer le mode pratique.");
+            return;
+        }
         if (plugin.getGameManager().getSessionByPlayer(player.getUniqueId()) != null) {
             player.sendMessage("§cTu es déjà dans une partie.");
             return;

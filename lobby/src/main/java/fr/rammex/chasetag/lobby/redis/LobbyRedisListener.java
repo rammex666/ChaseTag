@@ -84,6 +84,7 @@ public class LobbyRedisListener {
         GameEndMessage msg = MessageSerializer.deserialize(json, GameEndMessage.class);
 
         plugin.getServer().getScheduler().runTask(plugin, () -> {
+            System.out.println("Partie terminée sur le serveur " + msg.getServerId() + ", gagnant : " + msg.getWinnerName());
             if (msg.getWinnerName() != null && !msg.getWinnerName().equalsIgnoreCase("Aucun")) {
                 Bukkit.broadcastMessage(ChatColor.GOLD + "[ChaseTag] " + ChatColor.AQUA + msg.getWinnerName() + 
                     ChatColor.YELLOW + " a gagné sa partie sur le serveur " + ChatColor.WHITE + msg.getServerId() + " !");

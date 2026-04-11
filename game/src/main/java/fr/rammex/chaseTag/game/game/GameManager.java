@@ -119,12 +119,12 @@ public class GameManager {
 
     private void startCountdown() {
         new org.bukkit.scheduler.BukkitRunnable() {
-            int count = 5;
+            int count = 10;
 
             @Override
             public void run() {
                 if (count > 0) {
-                    String color = count > 3 ? "§a" : (count > 1 ? "§e" : "§c");
+                    String color = count > 6 ? "§a" : (count > 3 ? "§e" : "§c");
                     String title = color + count;
                     Bukkit.getOnlinePlayers().forEach(p -> {
                         p.sendTitle(title, "§fPréparez-vous !", 0, 25, 0);
