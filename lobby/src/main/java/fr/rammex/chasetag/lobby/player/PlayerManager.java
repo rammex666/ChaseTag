@@ -96,4 +96,23 @@ public class PlayerManager {
     public static Map<String, Player> getAll() {
         return players;
     }
+
+    /**
+     * Récupère un joueur par son nom depuis le cache local ou la base de données MongoDB.
+     * Utile pour accéder aux statistiques.
+     */
+    public static Player getPlayerInfo(String name, PlayerMongoRepository repository) {
+        // 1. Chercher dans le cache local (joueurs en ligne)
+        Player cached = getPlayerByName(name);
+        if (cached != null) {
+            return cached;
+        }
+
+        // 2. Chercher dans MongoDB
+        if (repository != null) {
+            return repository.getPlayerByName(name).orElse(null);
+        }
+
+        return null;
+    }
 }

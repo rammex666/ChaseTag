@@ -12,35 +12,34 @@ public class GameManager {
 
     private final ChaseTagLobby plugin;
     private final Map<String, GameSession> sessions = new HashMap<>();
-    // playerUuid -> sessionId pour lookup rapide
     private final Map<UUID, String> playerSession = new HashMap<>();
 
     public GameManager(ChaseTagLobby plugin) {
         this.plugin = plugin;
     }
 
-    // Créer une nouvelle session (appelé par /chasetag create)
     public GameSession createSession(UUID ownerUuid) {
+        return createSession(ownerUuid, GameSession.GameType.DUEL);
+    }
+
+    public GameSession createSession(UUID ownerUuid, GameSession.GameType type) {
         String sessionId = UUID.randomUUID().toString().substring(0, 8);
-        GameSession session = new GameSession(sessionId, ownerUuid);
+        GameSession session = new GameSession(sessionId, ownerUuid, type);
         session.addPlayer(ownerUuid);
         sessions.put(sessionId, session);
         playerSession.put(ownerUuid, sessionId);
-        plugin.getLogger().info("Session créée : " + sessionId + " par " + ownerUuid);
+        plugin.getLogger().info("Session créée : " + sessionId + " par " + ownerUuid + " (Type: " + type + ")");
         return session;
     }
 
     public void createSoloSession(UUID playerUuid, int eggId, String mapName) {
-        if (getSessionByPlayer(playerUuid) != null) {
-            return;
-        }
-        GameSession session = createSession(playerUuid);
+        if (getSessionByPlayer(playerUuid) != null) return;
+        GameSession session = createSession(playerUuid, GameSession.GameType.DUEL);
         session.setMap(eggId, mapName);
         session.setStatus(GameSession.Status.STARTING);
         spawnServer(session);
     }
 
-    // Rejoindre en tant que joueur (appelé par /chasetag join <id>)
     public boolean joinSession(String sessionId, UUID playerUuid) {
         GameSession session = sessions.get(sessionId);
         if (session == null) return false;
@@ -50,14 +49,12 @@ public class GameManager {
         session.addPlayer(playerUuid);
         playerSession.put(playerUuid, sessionId);
 
-        // Les 2 joueurs sont là → spawn le serveur
         if (session.isReady()) {
             spawnServer(session);
         }
         return true;
     }
 
-    // Rejoindre en tant que spectateur (appelé par /chasetag spectate <id>)
     public boolean spectateSession(String sessionId, UUID spectatorUuid) {
         GameSession session = sessions.get(sessionId);
         if (session == null) return false;
@@ -68,29 +65,28 @@ public class GameManager {
         return true;
     }
 
-    // Spawn le serveur de jeu via Pterodactyl
     private void spawnServer(GameSession session) {
         session.setStatus(GameSession.Status.STARTING);
 
-        // Async pour ne pas bloquer le thread principal
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 PterodactylClient.ServerInfo info = plugin.getPterodactylClient()
-                    .createServer(session.getSessionId(), session.getEggId());
+                        .createServer(session.getSessionId(), session.getEggId());
 
-                session.setSessionId(session.getSessionId());
-                session.setPort(info.port());
                 session.setPterodactylInternalId(info.serverId());
-                // Stocker dans Redis
+                session.setPterodactylNumericId(info.numericId());
+                session.setPort(info.port());
+
                 try (Jedis jedis = plugin.getJedisPool().getResource()) {
                     jedis.hset(RedisChannel.SERVERS_MAP, info.serverId(),
-                               ServerState.STARTING.name());
+                            ServerState.STARTING.name());
                     jedis.hset(RedisChannel.SERVERS_PORT, info.serverId(),
-                               String.valueOf(info.port()));
+                            String.valueOf(info.port()));
                 }
 
                 plugin.getLogger().info("Serveur spawné : " + info.serverId()
-                    + " port=" + info.port());
+                        + " numericId=" + info.numericId()
+                        + " port=" + info.port());
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Erreur spawn serveur : " + e.getMessage());
@@ -99,35 +95,31 @@ public class GameManager {
         });
     }
 
-    // Appelé par LobbyRedisListener quand GAME_END est reçu
     public void onGameEnd(String pterodactylServerId, List<UUID> players) {
-        // Retrouver la session
         sessions.values().stream()
-            .filter(s -> pterodactylServerId.equals(s.getPterodactylServerId()))
-            .findFirst()
-            .ifPresent(session -> {
-                session.setStatus(GameSession.Status.ENDING);
+                .filter(s -> pterodactylServerId.equals(s.getPterodactylServerId()))
+                .findFirst()
+                .ifPresent(session -> {
+                    session.setStatus(GameSession.Status.ENDING);
 
-                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                    // Kill le serveur Pterodactyl
-                    try {
-                        plugin.getPterodactylClient().deleteServer(session.getPterodactylInternalId());
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("Erreur kill serveur : " + e.getMessage());
-                    }
+                    plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                        try {
+                            plugin.getLogger().info("Suppression du serveur #" + session.getPterodactylNumericId());
+                            plugin.getPterodactylClient().deleteServer(session.getPterodactylNumericId());
+                        } catch (Exception e) {
+                            plugin.getLogger().severe("Erreur kill serveur : " + e.getMessage());
+                        }
 
-                    // Cleanup Redis
-                    try (Jedis jedis = plugin.getJedisPool().getResource()) {
-                        jedis.hdel(RedisChannel.SERVERS_MAP, pterodactylServerId);
-                        jedis.hdel(RedisChannel.SERVERS_PORT, pterodactylServerId);
-                    }
+                        try (Jedis jedis = plugin.getJedisPool().getResource()) {
+                            jedis.hdel(RedisChannel.SERVERS_MAP, session.getPterodactylInternalId());
+                            jedis.hdel(RedisChannel.SERVERS_PORT, session.getPterodactylInternalId());
+                        }
 
-                    // Cleanup mémoire
-                    sessions.remove(session.getSessionId());
-                    session.getPlayers().forEach(playerSession::remove);
-                    session.getSpectators().forEach(playerSession::remove);
+                        sessions.remove(session.getSessionId());
+                        session.getPlayers().forEach(playerSession::remove);
+                        session.getSpectators().forEach(playerSession::remove);
+                    });
                 });
-            });
     }
 
     public GameSession getSession(String sessionId) { return sessions.get(sessionId); }

@@ -3,6 +3,7 @@ package fr.rammex.chasetag.lobby.menu;
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.duel.DuelRequestManager;
 import fr.rammex.chasetag.lobby.tournament.TournamentManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -204,6 +205,25 @@ public class MapSelectionMenu extends Menu {
             } else {
                 duelRequestManager.createRequest(player.getName(), targetName, eggId, mapName);
                 player.sendMessage(ChatColor.GREEN + "Demande de duel envoyée vers " + targetName + " avec la map " + mapName + " (egg " + eggId + ").");
+
+                Player target = Bukkit.getPlayerExact(targetName);
+                if (target != null) {
+                    target.sendMessage(" ");
+                    target.sendMessage(ChatColor.GOLD + "⚔ " + ChatColor.YELLOW + player.getName() + ChatColor.GOLD + " vous a défié en duel !");
+                    target.sendMessage(ChatColor.YELLOW + "Map: " + ChatColor.WHITE + mapName);
+                    target.sendMessage(" ");
+
+                    net.md_5.bungee.api.chat.TextComponent accept = new net.md_5.bungee.api.chat.TextComponent(ChatColor.GREEN + "" + ChatColor.BOLD + "[ACCEPTER] ");
+                    accept.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel accept"));
+                    accept.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.GREEN + "Cliquez pour accepter le duel")));
+
+                    net.md_5.bungee.api.chat.TextComponent decline = new net.md_5.bungee.api.chat.TextComponent(ChatColor.RED + "" + ChatColor.BOLD + "[REFUSER]");
+                    decline.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel decline"));
+                    decline.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.RED + "Cliquez pour refuser le duel")));
+
+                    target.spigot().sendMessage(accept, decline);
+                    target.sendMessage(" ");
+                }
                 player.closeInventory();
             }
         } else {

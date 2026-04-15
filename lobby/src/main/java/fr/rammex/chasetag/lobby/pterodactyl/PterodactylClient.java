@@ -41,7 +41,7 @@ public class PterodactylClient {
         int port = getAllocationPort(allocationId);
 
         String externalHost = ChaseTagLobby.getInstance()
-            .getConfig().getString("pterodactyl.external-host", "localhost");
+                .getConfig().getString("pterodactyl.external-host", "localhost");
 
         JsonObject env = new JsonObject();
         env.addProperty("GAME_ID", gameId);
@@ -57,8 +57,6 @@ public class PterodactylClient {
         limits.addProperty("io", 500);
         limits.addProperty("cpu", 150);
 
-
-        // ✅ Champ requis
         JsonObject featureLimits = new JsonObject();
         featureLimits.addProperty("databases", 0);
         featureLimits.addProperty("backups", 0);
@@ -72,8 +70,7 @@ public class PterodactylClient {
         body.addProperty("egg", eggId);
         body.addProperty("user", pterodactylUserId);
         body.addProperty("docker_image", "ghcr.io/pterodactyl/yolks:java_21");
-        body.addProperty("startup",
-                "bash start.sh");
+        body.addProperty("startup", "bash start.sh");
         body.addProperty("skip_scripts", false);
         body.add("environment", env);
         body.add("limits", limits);
@@ -81,12 +78,12 @@ public class PterodactylClient {
         body.add("allocation", allocation);
 
         Request request = new Request.Builder()
-            .url(apiUrl + "/api/application/servers")
-            .post(RequestBody.create(body.toString(), JSON))
-            .addHeader("Authorization", "Bearer " + apiKey)
-            .addHeader("Accept", "application/json")
-            .addHeader("Content-Type", "application/json")
-            .build();
+                .url(apiUrl + "/api/application/servers")
+                .post(RequestBody.create(body.toString(), JSON))
+                .addHeader("Authorization", "Bearer " + apiKey)
+                .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/json")
+                .build();
 
         try (Response response = http.newCall(request).execute()) {
             String responseBody = response.body().string();
@@ -102,7 +99,10 @@ public class PterodactylClient {
             String serverId = result.get("identifier").getAsString();
             int internalId = result.get("id").getAsInt();
 
-            ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId + ", internalId=" + internalId + ", allocationPort=" + port + ", externalHost=" + externalHost);
+            ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId
+                    + ", internalId=" + internalId
+                    + ", allocationPort=" + port
+                    + ", externalHost=" + externalHost);
 
             Bukkit.getScheduler().runTaskAsynchronously(ChaseTagLobby.getInstance(), () -> {
                 try {
@@ -113,29 +113,31 @@ public class PterodactylClient {
                 }
             });
 
-            return new ServerInfo(serverId, port);
+            return new ServerInfo(serverId, port, internalId);
         }
     }
 
-    public void deleteServer(String serverId) throws IOException {
+    public void deleteServer(int numericId) throws IOException {
         Request request = new Request.Builder()
-            .url(apiUrl + "/api/application/servers/" + serverId + "/force")
-            .delete()
-            .addHeader("Authorization", "Bearer " + apiKey)
-            .addHeader("Accept", "application/json")
-            .build();
+                .url(apiUrl + "/api/application/servers/" + numericId + "/force")
+                .delete()
+                .addHeader("Authorization", "Bearer " + apiKey)
+                .addHeader("Accept", "application/json")
+                .build();
 
         try (Response response = http.newCall(request).execute()) {
             if (!response.isSuccessful() && response.code() != 404) {
-                throw new IOException("Erreur suppression serveur : " + response.code());
+                throw new IOException("Erreur suppression serveur : " + response.code()
+                        + " : " + response.body().string());
             }
+            ChaseTagLobby.getInstance().getLogger().info("Serveur supprimé : #" + numericId);
         }
     }
 
     private void waitForInstallation(int internalId) throws IOException, InterruptedException {
         for (int i = 0; i < 60; i++) {
             Request request = new Request.Builder()
-                    .url(apiUrl + "/api/application/servers/" + internalId) // ← ID numérique
+                    .url(apiUrl + "/api/application/servers/" + internalId)
                     .get()
                     .addHeader("Authorization", "Bearer " + apiKey)
                     .addHeader("Accept", "application/json")
@@ -156,8 +158,7 @@ public class PterodactylClient {
                         .getAsJsonObject("container")
                         .get("installed").getAsInt();
 
-                if (installed == 1) return; // 1 = installation terminée
-
+                if (installed == 1) return;
             }
 
             Thread.sleep(5000);
@@ -179,13 +180,13 @@ public class PterodactylClient {
 
         try (Response response = http.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("Erreur start serveur : " + response.code() + " : " + response.body().string());
+                throw new IOException("Erreur start serveur : " + response.code()
+                        + " : " + response.body().string());
             }
         }
     }
 
     private int getAvailableAllocationId() throws IOException {
-        // GET /api/application/nodes/{nodeId}/allocations
         Request request = new Request.Builder()
                 .url(apiUrl + "/api/application/nodes/" + nodeId + "/allocations?per_page=100")
                 .get()
@@ -201,8 +202,7 @@ public class PterodactylClient {
 
             for (JsonElement el : data) {
                 JsonObject attrs = el.getAsJsonObject().getAsJsonObject("attributes");
-                // Prendre une allocation non assignée
-                if (attrs.get("assigned").getAsBoolean() == false) {
+                if (!attrs.get("assigned").getAsBoolean()) {
                     return attrs.get("id").getAsInt();
                 }
             }
@@ -234,5 +234,5 @@ public class PterodactylClient {
         }
     }
 
-    public record ServerInfo(String serverId, int port) {}
+    public record ServerInfo(String serverId, int port, int numericId) {}
 }

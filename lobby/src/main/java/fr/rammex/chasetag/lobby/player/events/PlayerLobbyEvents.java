@@ -53,21 +53,37 @@ public class PlayerLobbyEvents implements Listener {
     @EventHandler
     public void onPlayerJoinFirstTime(PlayerJoinEvent event){
         org.bukkit.entity.Player player = event.getPlayer();
-        Player stored = PlayerManager.getPlayer(player.getUniqueId().toString());
-        if (stored == null) {
-            stored = PlayerManager.getPlayerByName(player.getName());
-        }
+        
+        // Priorité au chargement depuis MongoDB pour avoir les stats fraîches
+        Player stored = playerMongoRepository != null ? 
+            playerMongoRepository.getPlayerByUUID(player.getUniqueId().toString()).orElse(null) : null;
 
         if (stored == null) {
-            stored = new Player(player.getUniqueId().toString(), player.getName(), Rank.Joueur);
-            PlayerManager.addPlayer(stored);
-        } else if (!player.getName().equals(stored.getPlayerName())) {
+            // Fallback sur le cache local ou nouveau joueur
+            stored = PlayerManager.getPlayer(player.getUniqueId().toString());
+            if (stored == null) {
+                stored = new Player(player.getUniqueId().toString(), player.getName(), Rank.Joueur);
+            }
+        }
+
+        // Toujours mettre à jour le nom si nécessaire
+        if (!player.getName().equals(stored.getPlayerName())) {
             stored.setPlayerName(player.getName());
-            PlayerManager.save();
         }
 
+        // Ajouter/Mettre à jour dans le manager local
+        PlayerManager.addPlayer(stored);
+        
         if (playerMongoRepository != null) {
             playerMongoRepository.savePlayer(stored);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = PlayerManager.getPlayer(event.getPlayer().getUniqueId().toString());
+        if (player != null && playerMongoRepository != null) {
+            playerMongoRepository.savePlayer(player);
         }
     }
 }

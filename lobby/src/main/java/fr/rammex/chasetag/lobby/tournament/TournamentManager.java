@@ -299,7 +299,7 @@ public class TournamentManager {
             return;
         }
 
-        var session = plugin.getGameManager().createSession(player1.getUniqueId());
+        var session = plugin.getGameManager().createSession(player1.getUniqueId(), fr.rammex.chasetag.lobby.game.GameSession.GameType.TOURNAMENT);
         session.setMap(match.getEggId(), match.getMapName());
         boolean joined = plugin.getGameManager().joinSession(session.getSessionId(), player2.getUniqueId());
         if (joined) {

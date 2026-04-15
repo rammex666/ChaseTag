@@ -84,10 +84,45 @@ public class LobbyRedisListener {
         GameEndMessage msg = MessageSerializer.deserialize(json, GameEndMessage.class);
 
         plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.getLogger().info("GAME_END reçu: serverId=" + msg.getServerId());
+            
+            GameSession session = plugin.getGameManager().getSessions().values().stream()
+                    .filter(s -> msg.getServerId().equals(s.getPterodactylServerId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (session == null) {
+                plugin.getLogger().warning("Session introuvable pour le serveur " + msg.getServerId());
+            }
+
             System.out.println("Partie terminée sur le serveur " + msg.getServerId() + ", gagnant : " + msg.getWinnerName());
             if (msg.getWinnerName() != null && !msg.getWinnerName().equalsIgnoreCase("Aucun")) {
                 Bukkit.broadcastMessage(ChatColor.GOLD + "[ChaseTag] " + ChatColor.AQUA + msg.getWinnerName() + 
                     ChatColor.YELLOW + " a gagné sa partie sur le serveur " + ChatColor.WHITE + msg.getServerId() + " !");
+            }
+
+            // Sauvegarder les stats dans MongoDB
+            if (msg.getPlayerScores() != null) {
+                String gameType = (session != null) ? session.getType().name() : "DUEL";
+                
+                for (java.util.Map.Entry<String, Integer> entry : msg.getPlayerScores().entrySet()) {
+                    String uuidStr = entry.getKey();
+                    int score = entry.getValue();
+                    boolean isWinner = uuidStr.equals(msg.getWinnerUuid());
+
+                    plugin.getPlayerMongoRepository().getPlayerByUUID(uuidStr).ifPresent(player -> {
+                        player.incrementGamesPlayed();
+                        if (isWinner) {
+                            player.incrementWins();
+                        } else {
+                            player.incrementLosses();
+                        }
+                        player.updateBestScore(gameType, score);
+                        
+                        plugin.getPlayerMongoRepository().savePlayer(player);
+                        plugin.getLogger().info("Stats sauvegardées pour " + player.getPlayerName() + " (" + gameType + ")");
+                    });
+                }
             }
 
             // Sauvegarder les points globaux dans Redis

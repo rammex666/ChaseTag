@@ -7,20 +7,29 @@ import java.util.UUID;
 public class GameSession {
 
     public enum Status { WAITING, STARTING, PLAYING, ENDING }
+    public enum GameType { DUEL, TOURNAMENT }
 
     private String sessionId;
     private final UUID ownerUuid;
     private final List<UUID> players = new ArrayList<>();
     private final List<UUID> spectators = new ArrayList<>();
-    private String pterodactylInternalId; // identifier Pterodactyl (pour delete)
+    private String pterodactylInternalId;
+    private int pterodactylNumericId;
     private int port;
     private int eggId = -1;
     private String mapName = "";
     private Status status = Status.WAITING;
+    private GameType type = GameType.DUEL;
 
     public GameSession(String sessionId, UUID ownerUuid) {
         this.sessionId = sessionId;
         this.ownerUuid = ownerUuid;
+    }
+
+    public GameSession(String sessionId, UUID ownerUuid, GameType type) {
+        this.sessionId = sessionId;
+        this.ownerUuid = ownerUuid;
+        this.type = type;
     }
 
     public boolean isFull() { return players.size() >= 2; }
@@ -37,18 +46,18 @@ public class GameSession {
     public void removeSpectator(UUID uuid) { spectators.remove(uuid); }
 
     public String getSessionId() { return sessionId; }
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
     public UUID getOwnerUuid() { return ownerUuid; }
     public List<UUID> getPlayers() { return players; }
     public List<UUID> getSpectators() { return spectators; }
 
-    // Pour le matching Redis — on utilise le sessionId directement
     public String getPterodactylServerId() { return sessionId; }
 
-    // Identifier Pterodactyl (ex: "75ff9a73") — uniquement pour l'API delete/start
     public String getPterodactylInternalId() { return pterodactylInternalId; }
     public void setPterodactylInternalId(String id) { this.pterodactylInternalId = id; }
 
-    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+    public int getPterodactylNumericId() { return pterodactylNumericId; }
+    public void setPterodactylNumericId(int id) { this.pterodactylNumericId = id; }
 
     public int getPort() { return port; }
     public void setPort(int port) { this.port = port; }
@@ -63,4 +72,7 @@ public class GameSession {
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+
+    public GameType getType() { return type; }
+    public void setType(GameType type) { this.type = type; }
 }

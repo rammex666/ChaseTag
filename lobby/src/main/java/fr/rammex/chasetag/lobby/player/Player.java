@@ -55,6 +55,53 @@ public class Player {
         this.playerData = playerData;
     }
 
+    public void incrementWins() {
+        int wins = getIntData("wins") + 1;
+        setPlayerData("wins", wins);
+    }
+
+    public void incrementLosses() {
+        int losses = getIntData("losses") + 1;
+        setPlayerData("losses", losses);
+    }
+
+    public void incrementGamesPlayed() {
+        int games = getIntData("games_played") + 1;
+        setPlayerData("games_played", games);
+    }
+
+    public void updateBestScore(String type, int score) {
+        String key = "best_score_" + type.toLowerCase();
+        int currentBest = getIntData(key);
+        if (score > currentBest) {
+            setPlayerData(key, score);
+        }
+    }
+
+    public int getWins() {
+        return getIntData("wins");
+    }
+
+    public int getLosses() {
+        return getIntData("losses");
+    }
+
+    public int getGamesPlayed() {
+        return getIntData("games_played");
+    }
+
+    public int getBestScore(String type) {
+        return getIntData("best_score_" + type.toLowerCase());
+    }
+
+    private int getIntData(String key) {
+        Object val = playerData.get(key);
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
+        return 0;
+    }
+
     public org.bukkit.entity.Player getBukkitPlayer() {
         return Bukkit.getPlayer(UUID.fromString(playerUUID));
     }

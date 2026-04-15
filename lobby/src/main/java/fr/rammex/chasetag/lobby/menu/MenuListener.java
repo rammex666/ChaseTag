@@ -35,6 +35,14 @@ public class MenuListener implements Listener {
                 mapSelectionMenu.handleClick(event);
                 return;
             }
+            if (holder instanceof LobbyMenu lobbyMenu) {
+                lobbyMenu.handleClick(event);
+                return;
+            }
+            if (holder instanceof PlayerSelectionMenu playerSelectionMenu) {
+                playerSelectionMenu.handleClick(event);
+                return;
+            }
             String title = PlainTextComponentSerializer.plainText().serialize(event.getView().title());
             TournamentManager tournamentManager = ChaseTagLobby.getInstance().getTournamentManager();
 
