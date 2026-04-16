@@ -212,6 +212,7 @@ public class MapSelectionMenu extends Menu {
                     target.sendMessage(ChatColor.GOLD + "⚔ " + ChatColor.YELLOW + player.getName() + ChatColor.GOLD + " vous a défié en duel !");
                     target.sendMessage(ChatColor.YELLOW + "Map: " + ChatColor.WHITE + mapName);
                     target.sendMessage(" ");
+                    target.playSound(target.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
                     net.md_5.bungee.api.chat.TextComponent accept = new net.md_5.bungee.api.chat.TextComponent(ChatColor.GREEN + "" + ChatColor.BOLD + "[ACCEPTER] ");
                     accept.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel accept"));

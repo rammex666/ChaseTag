@@ -57,6 +57,16 @@ public class GameManager {
         Player chaser = game.getCurrentChaser();
         Player runner = game.getCurrentRunner();
 
+        // Rotation des spawns chaque round
+        org.bukkit.Location redSpawn = game.getArena().getRedSpawn();
+        org.bukkit.Location blueSpawn = game.getArena().getBlueSpawn();
+
+        if (game.getCurrentRound() % 2 == 0) {
+            org.bukkit.Location temp = redSpawn;
+            redSpawn = blueSpawn;
+            blueSpawn = temp;
+        }
+
         ItemStack shears = new ItemStack(Material.SHEARS);
         ItemMeta meta = shears.getItemMeta();
         if (meta != null) {
@@ -68,7 +78,7 @@ public class GameManager {
         // Téléporter et équiper les joueurs
         if (chaser != null && chaser.getBukkitPlayer() != null) {
             org.bukkit.entity.Player chaserBukkit = chaser.getBukkitPlayer();
-            chaserBukkit.teleport(game.getArena().getRedSpawn());
+            chaserBukkit.teleport(redSpawn);
             chaserBukkit.setHealth(20.0);
             chaserBukkit.setFoodLevel(20);
             chaserBukkit.getInventory().clear();
@@ -83,7 +93,7 @@ public class GameManager {
         }
         if (runner != null && runner.getBukkitPlayer() != null) {
             org.bukkit.entity.Player runnerBukkit = runner.getBukkitPlayer();
-            runnerBukkit.teleport(game.getArena().getBlueSpawn());
+            runnerBukkit.teleport(blueSpawn);
             runnerBukkit.setHealth(20.0);
             runnerBukkit.setFoodLevel(20);
             runnerBukkit.getInventory().clear();
@@ -97,7 +107,7 @@ public class GameManager {
             if (reach != null) reach.setBaseValue(2.0);
         } else if (game.isTestDev() && runner == null) {
                 if (testPig != null) testPig.remove();
-                testPig = game.getArena().getBlueSpawn().getWorld().spawnEntity(game.getArena().getBlueSpawn(), EntityType.PIG);
+                testPig = blueSpawn.getWorld().spawnEntity(blueSpawn, EntityType.PIG);
                 Pig pig = (Pig) testPig;
                 pig.setAI(false);
                 pig.setInvulnerable(false); // Doit pouvoir recevoir un coup
@@ -228,6 +238,14 @@ public class GameManager {
 
         Player runner = game.getCurrentRunner();
         Player chaser = game.getCurrentChaser();
+
+        // Clear inventories to prevent item duplication
+        for (Player p : game.getPlayers()) {
+            if (p.getBukkitPlayer() != null) {
+                p.getBukkitPlayer().getInventory().clear();
+                p.getBukkitPlayer().setItemOnCursor(null);
+            }
+        }
 
         if (runner != null) {
             game.addScore(runner.getPlayerUUID(), runnerPoints);
