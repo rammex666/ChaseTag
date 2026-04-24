@@ -32,9 +32,12 @@ public class PterodactylClient {
         return createServer(gameId, eggId);
     }
 
-    public ServerInfo createServer(String gameId, int eggId) throws IOException {
+    public ServerInfo createServer(String gameId, int eggId, String downloadUrl) throws IOException {
         if (eggId <= 0) {
             eggId = this.eggId;
+        }
+        if (downloadUrl == null || downloadUrl.isBlank()) {
+            downloadUrl = "http://play.ownedcup.fr:25599/server.tar.gz";
         }
 
         int allocationId = getAvailableAllocationId();
@@ -48,7 +51,7 @@ public class PterodactylClient {
         env.addProperty("GAME_HOST", externalHost);
         env.addProperty("GAME_PORT", port);
         env.addProperty("SERVER_JARFILE", "server.jar");
-        env.addProperty("DOWNLOAD_URL", "http://play.ownedcup.fr:25599/server.tar.gz");
+        env.addProperty("DOWNLOAD_URL", downloadUrl);
 
         JsonObject limits = new JsonObject();
         limits.addProperty("memory", 2048);
@@ -102,7 +105,8 @@ public class PterodactylClient {
             ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId
                     + ", internalId=" + internalId
                     + ", allocationPort=" + port
-                    + ", externalHost=" + externalHost);
+                    + ", externalHost=" + externalHost
+                    + ", downloadUrl=" + downloadUrl);
 
             Bukkit.getScheduler().runTaskAsynchronously(ChaseTagLobby.getInstance(), () -> {
                 try {
@@ -115,6 +119,10 @@ public class PterodactylClient {
 
             return new ServerInfo(serverId, port, internalId);
         }
+    }
+
+    public ServerInfo createServer(String gameId, int eggId) throws IOException {
+        return createServer(gameId, eggId, "");
     }
 
     public void deleteServer(int numericId) throws IOException {

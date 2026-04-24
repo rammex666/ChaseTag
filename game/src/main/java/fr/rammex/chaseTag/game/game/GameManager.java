@@ -82,7 +82,7 @@ public class GameManager {
             chaserBukkit.setHealth(20.0);
             chaserBukkit.setFoodLevel(20);
             chaserBukkit.getInventory().clear();
-            chaserBukkit.getInventory().addItem(new ItemStack(Material.RED_WOOL, 64));
+            chaserBukkit.getInventory().addItem(new ItemStack(Material.RED_WOOL,  20));
             chaserBukkit.getInventory().addItem(shears);
             chaserBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
             chaserBukkit.sendMessage(ChatColor.RED + "Vous êtes le CHASSEUR ! Taguez le chassé !");
@@ -97,7 +97,7 @@ public class GameManager {
             runnerBukkit.setHealth(20.0);
             runnerBukkit.setFoodLevel(20);
             runnerBukkit.getInventory().clear();
-            runnerBukkit.getInventory().addItem(new ItemStack(Material.BLUE_WOOL, 64));
+            runnerBukkit.getInventory().addItem(new ItemStack(Material.BLUE_WOOL, 20));
             runnerBukkit.getInventory().addItem(shears);
             runnerBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
             runnerBukkit.sendMessage(ChatColor.BLUE + "Vous êtes le CHASSÉ ! Fuyez !");
@@ -309,6 +309,30 @@ public class GameManager {
             game.setCurrentManche(1);
             startRound();
         }
+    }
+
+    public void pauseGame(String leaverName) {
+        if (game == null || game.getGameState() != GameState.PLAYING) return;
+        
+        game.setGameState(GameState.PAUSE);
+        Timer timer = plugin.getTimerManager().getTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
+        if (timer != null) {
+            timer.pause();
+        }
+        
+        Bukkit.broadcastMessage(ChatColor.RED + "La partie est en PAUSE car " + ChatColor.YELLOW + leaverName + ChatColor.RED + " a quitté !");
+    }
+
+    public void resumeGame(String joinerName) {
+        if (game == null || game.getGameState() != GameState.PAUSE) return;
+        
+        game.setGameState(GameState.PLAYING);
+        Timer timer = plugin.getTimerManager().getTimer("round_" + game.getCurrentRound() + "_" + game.getCurrentManche());
+        if (timer != null) {
+            timer.resume();
+        }
+        
+        Bukkit.broadcastMessage(ChatColor.GREEN + "La partie REPREND car " + ChatColor.YELLOW + joinerName + ChatColor.GREEN + " est revenu !");
     }
 
     public Entity getTestPig() {

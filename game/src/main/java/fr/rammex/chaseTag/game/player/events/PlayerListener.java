@@ -7,6 +7,7 @@ import fr.rammex.chaseTag.game.game.GameState;
 import fr.rammex.chaseTag.game.player.Player;
 import fr.rammex.chaseTag.game.player.PlayerManager;
 import fr.rammex.chaseTag.game.player.Role;
+import fr.rammex.chaseTag.game.game.SpectatorManager;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -17,12 +18,16 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,22 +62,39 @@ public class PlayerListener implements Listener {
                 if (currentGame != null) {
                     currentGame.getSpectators().add(player1);
                     player.teleport(currentGame.getArena().getSpecSpawn());
+                    SpectatorManager.giveSpectatorItems(player);
                 }
                 return;
             }
 
         Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
         
-        if (currentGame != null || Bukkit.getOnlinePlayers().stream().filter(p -> !p.hasPermission("chasetag.staff")).count() > 2) {
-            player.setGameMode(GameMode.SPECTATOR);
-            player.sendMessage("§7La partie est complète ou déjà lancée. Vous êtes en mode spectateur.");
-            
-            if (currentGame != null) {
+        if (currentGame != null) {
+            // Reconnexion d'un joueur à sa partie
+            if (currentGame.getPlayers().contains(player1)) {
+                player.setGameMode(GameMode.SURVIVAL);
+                // On le téléporte au spawn approprié selon son rôle
+                if (player1.getPlayerRole() == Role.Chase) {
+                    player.teleport(currentGame.getArena().getRedSpawn());
+                } else {
+                    player.teleport(currentGame.getArena().getBlueSpawn());
+                }
+                
+                ChaseTag.getInstance().getGameManager().resumeGame(player.getName());
+                return;
+            }
+
+            // Spectateur si la partie est déjà lancée
+            if (currentGame.getGameState() != GameState.WAITING || Bukkit.getOnlinePlayers().stream().filter(p -> !p.hasPermission("chasetag.staff")).count() > 2) {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.sendMessage("§7La partie est complète ou déjà lancée. Vous êtes en mode spectateur.");
+                
                 currentGame.getSpectators().add(player1);
                 player1.setPlayerRole(Role.Spec);
                 player.teleport(currentGame.getArena().getSpecSpawn());
+                SpectatorManager.giveSpectatorItems(player);
+                return;
             }
-            return;
         }
 
         Bukkit.getScheduler().runTaskLater(ChaseTag.getInstance(), () -> {
@@ -118,7 +140,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game != null && game.isCountdown()) {
+        if (game != null && (game.isCountdown() || game.getGameState() == GameState.PAUSE)) {
             event.setCancelled(true);
             return;
         }
@@ -141,6 +163,13 @@ public class PlayerListener implements Listener {
         if (type == Material.RED_WOOL || type == Material.BLUE_WOOL) {
             if (game != null && game.getArena() != null) {
                 Arena arena = game.getArena();
+
+                if (!arena.isInside(event.getBlock().getLocation())) {
+                    event.setCancelled(true);
+                    player.sendMessage("§cVous ne pouvez pas poser de blocs en dehors de l'arène !");
+                    return;
+                }
+
                 int maxHeight = arena.getMaxWoolTowerHeight();
                 double minY = Math.min(arena.getY1(), arena.getY2());
                 double currentHeight = event.getBlock().getY() - minY + 1;
@@ -156,9 +185,38 @@ public class PlayerListener implements Listener {
     }
 
     @EventHandler
-    public void onInteract(org.bukkit.event.player.PlayerInteractEvent event) {
+    public void onInteract(PlayerInteractEvent event) {
+        org.bukkit.entity.Player player = event.getPlayer();
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game != null && game.isCountdown()) {
+        if (game == null) return;
+
+        // Boussole spectateur
+        if (player.getGameMode() == GameMode.SPECTATOR && 
+            (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
+            if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS) {
+                SpectatorManager.handleSpectatorInteract(player, game);
+                return;
+            }
+        }
+
+        if (game.isCountdown() || game.getGameState() == GameState.PAUSE) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (event.getClickedBlock() != null) {
+            Material type = event.getClickedBlock().getType();
+            String typeName = type.name();
+            if (typeName.contains("TRAPDOOR") || typeName.contains("FENCE_GATE") || typeName.contains("DOOR")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockPhysics(BlockPhysicsEvent event) {
+        Game game = ChaseTag.getInstance().getGameManager().getGame();
+        if (game != null && event.getBlock().getType() == Material.CACTUS) {
             event.setCancelled(true);
         }
     }
@@ -168,7 +226,7 @@ public class PlayerListener implements Listener {
         Game game = ChaseTag.getInstance().getGameManager().getGame();
         if (game == null) return;
         
-        if (game.isCountdown()) {
+        if (game.isCountdown() || game.getGameState() == GameState.PAUSE) {
             event.setCancelled(true);
             return;
         }
@@ -189,7 +247,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onTag(EntityDamageByEntityEvent event) {
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game != null && game.isCountdown()) {
+        if (game != null && (game.isCountdown() || game.getGameState() == GameState.PAUSE)) {
             event.setCancelled(true);
             return;
         }
@@ -257,8 +315,21 @@ public void onPlayerMessage(AsyncChatEvent event){
     Bukkit.broadcast(Component.text(newMessage));
 }
 
-@org.bukkit.event.EventHandler
-public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
-    ChaseTag.getInstance().getScoreboardManager().removePlayer(event.getPlayer());
+@EventHandler
+public void onQuit(PlayerQuitEvent event) {
+    org.bukkit.entity.Player player = event.getPlayer();
+    ChaseTag.getInstance().getScoreboardManager().removePlayer(player);
+    
+    Game game = ChaseTag.getInstance().getGameManager().getGame();
+    if (game == null) return;
+    
+    Player player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
+    if (player1 == null) return;
+    
+    if (game.getPlayers().contains(player1)) {
+        ChaseTag.getInstance().getGameManager().pauseGame(player.getName());
+    } else if (game.getSpectators().contains(player1)) {
+        game.getSpectators().remove(player1);
+    }
 }
 }

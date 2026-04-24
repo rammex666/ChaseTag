@@ -1,26 +1,29 @@
 redis:
-  host: localhost
-  port: 6379
-  password: ""
+  host: 141.11.114.30
+  port: 25567
+  password: "OHkoiujorjfoirokjdfkhou!32"
 
 pterodactyl:
-  url: https://panel.ton-domaine.fr
-  api-key: ptla_XXXXXXXXXXXX
+  url: https://panel.ownedcup.fr
+  api-key: ptla_n5q22hVJGfkT33uGAEYLwzWQ09Qc1ih2AF4kf6I8Egq
+  egg-id: 22
   external-host: 141.11.114.30
-  egg-id: 5
   maps:
-    - name: "Classic"
-      egg-id: 5
-      mode: "both"
-    - name: "Map rapide"
-      egg-id: 6
+    - name: "Temple"
+      egg-id: 24
       mode: "practice"
-    - name: "Map fun"
-      egg-id: 7
-      mode: "tournament"
+      download-url: "http://play.ownedcup.fr:25599/temple.tar.gz"
+    - name: "Sand"
+      egg-id: 25
+      mode: "practice"
+      download-url: "http://play.ownedcup.fr:25599/sand.tar.gz"
+    - name: "Mossy"
+      egg-id: 26
+      mode: "practice"
+      download-url: "http://play.ownedcup.fr:25599/mossy.tar.gz"
 
 mongodb:
-  uri: "mongodb://localhost:27017"
+  uri: "mongodb://TYTYTYTYYYT23!:TYsefpodpospi888888:@141.11.114.30:25574/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.8.2"
   database: "chasetag"
 
 tournament:

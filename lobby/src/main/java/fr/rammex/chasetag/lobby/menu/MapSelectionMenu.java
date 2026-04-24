@@ -8,7 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -53,8 +52,7 @@ public class MapSelectionMenu extends Menu {
         this.phase = null;
         this.pool = -1;
         this.matchId = -1;
-        this.inventory = player.getServer().createInventory(this, 27,
-                "Choisir la map pour " + targetName);
+        this.inventory = player.getServer().createInventory(this, 27, "Choisir la map pour " + targetName);
     }
 
     public MapSelectionMenu(Player player, ChaseTagLobby plugin, TournamentManager tournamentManager,
@@ -69,8 +67,7 @@ public class MapSelectionMenu extends Menu {
         this.phase = phase;
         this.pool = pool;
         this.matchId = matchId;
-        this.inventory = player.getServer().createInventory(this, 27,
-                "Choisir la map pour Match " + matchId);
+        this.inventory = player.getServer().createInventory(this, 27, "Choisir la map pour Match " + matchId);
     }
 
     @Override
@@ -104,10 +101,9 @@ public class MapSelectionMenu extends Menu {
                     ChatColor.RED + "Aucune map disponible",
                     List.of(ChatColor.GRAY + "Aucune map compatible avec ce mode.")));
         }
+
         for (Map<?, ?> entry : allowedMaps) {
-            if (slot >= 16) {
-                break;
-            }
+            if (slot >= 16) break;
             String name = getString(entry, "name", "Map inconnue");
             int eggId = getInt(entry, "egg-id", 0);
             String mapMode = getString(entry, "mode", "both");
@@ -123,25 +119,25 @@ public class MapSelectionMenu extends Menu {
             slot++;
         }
 
-        ItemStack randomItem = MenuUtils.createMenuItem(
+        inventory.setItem(16, MenuUtils.createMenuItem(
                 Material.EMERALD,
                 ChatColor.GREEN + "Map aléatoire",
                 List.of(ChatColor.GRAY + "Choisit une map au hasard")
-        );
-        inventory.setItem(16, randomItem);
+        ));
 
-        ItemStack back = MenuUtils.createBackButton(ChatColor.YELLOW + "Retour", ChatColor.GRAY + "Retour au menu précédent");
-        inventory.setItem(26, back);
+        inventory.setItem(26, MenuUtils.createBackButton(
+                ChatColor.YELLOW + "Retour",
+                ChatColor.GRAY + "Retour au menu précédent"
+        ));
     }
 
     public void handleClick(InventoryClickEvent event) {
         event.setCancelled(true);
         ItemStack item = event.getCurrentItem();
-        if (item == null || item.getItemMeta() == null) {
-            return;
-        }
+        if (item == null || item.getItemMeta() == null) return;
 
         String displayName = item.getItemMeta().getDisplayName();
+
         if (displayName.equals(ChatColor.YELLOW + "Retour")) {
             player.closeInventory();
             return;
@@ -156,12 +152,11 @@ public class MapSelectionMenu extends Menu {
             String mapName = ChatColor.stripColor(displayName);
             int eggId = 0;
             if (item.getItemMeta().getLore() != null && !item.getItemMeta().getLore().isEmpty()) {
-                String loreLine = item.getItemMeta().getLore().get(0);
-                if (loreLine.contains("Egg ID: ")) {
+                String loreLine = ChatColor.stripColor(item.getItemMeta().getLore().get(0)).trim();
+                if (loreLine.startsWith("Egg ID: ")) {
                     try {
-                        eggId = Integer.parseInt(loreLine.replace("Egg ID: ", ""));
-                    } catch (NumberFormatException ignored) {
-                    }
+                        eggId = Integer.parseInt(loreLine.replace("Egg ID: ", "").trim());
+                    } catch (NumberFormatException ignored) {}
                 }
             }
             chooseMap(mapName, eggId);
@@ -181,6 +176,7 @@ public class MapSelectionMenu extends Menu {
                 allowedMaps.add(entry);
             }
         }
+
         if (allowedMaps.isEmpty()) {
             chooseMap("Par défaut", 0);
             return;
@@ -197,30 +193,42 @@ public class MapSelectionMenu extends Menu {
             eggId = plugin.getConfig().getInt("pterodactyl.egg-id", 0);
         }
 
+        plugin.getLogger().info("chooseMap: mapName=" + mapName + " eggId=" + eggId);
+
         if (duelMode) {
             if (selfMode) {
                 plugin.getGameManager().createSoloSession(player.getUniqueId(), eggId, mapName);
-                player.sendMessage(ChatColor.GREEN + "Duel de test lancé ! Serveur en cours de démarrage...\n" + "§aMap: §e" + mapName);
+                player.sendMessage(ChatColor.GREEN + "Duel de test lancé ! Serveur en cours de démarrage...\n§aMap: §e" + mapName);
                 player.closeInventory();
             } else {
                 duelRequestManager.createRequest(player.getName(), targetName, eggId, mapName);
-                player.sendMessage(ChatColor.GREEN + "Demande de duel envoyée vers " + targetName + " avec la map " + mapName + " (egg " + eggId + ").");
+                player.sendMessage(ChatColor.GREEN + "Demande de duel envoyée vers " + targetName
+                        + " avec la map " + mapName + " (egg " + eggId + ").");
 
                 Player target = Bukkit.getPlayerExact(targetName);
                 if (target != null) {
                     target.sendMessage(" ");
-                    target.sendMessage(ChatColor.GOLD + "⚔ " + ChatColor.YELLOW + player.getName() + ChatColor.GOLD + " vous a défié en duel !");
+                    target.sendMessage(ChatColor.GOLD + "⚔ " + ChatColor.YELLOW + player.getName()
+                            + ChatColor.GOLD + " vous a défié en duel !");
                     target.sendMessage(ChatColor.YELLOW + "Map: " + ChatColor.WHITE + mapName);
                     target.sendMessage(" ");
                     target.playSound(target.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
-                    net.md_5.bungee.api.chat.TextComponent accept = new net.md_5.bungee.api.chat.TextComponent(ChatColor.GREEN + "" + ChatColor.BOLD + "[ACCEPTER] ");
-                    accept.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel accept"));
-                    accept.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.GREEN + "Cliquez pour accepter le duel")));
+                    net.md_5.bungee.api.chat.TextComponent accept = new net.md_5.bungee.api.chat.TextComponent(
+                            ChatColor.GREEN + "" + ChatColor.BOLD + "[ACCEPTER] ");
+                    accept.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
+                            net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel accept"));
+                    accept.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
+                            net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                            new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.GREEN + "Cliquez pour accepter le duel")));
 
-                    net.md_5.bungee.api.chat.TextComponent decline = new net.md_5.bungee.api.chat.TextComponent(ChatColor.RED + "" + ChatColor.BOLD + "[REFUSER]");
-                    decline.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel decline"));
-                    decline.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.RED + "Cliquez pour refuser le duel")));
+                    net.md_5.bungee.api.chat.TextComponent decline = new net.md_5.bungee.api.chat.TextComponent(
+                            ChatColor.RED + "" + ChatColor.BOLD + "[REFUSER]");
+                    decline.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(
+                            net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/duel decline"));
+                    decline.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(
+                            net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                            new net.md_5.bungee.api.chat.hover.content.Text(ChatColor.RED + "Cliquez pour refuser le duel")));
 
                     target.spigot().sendMessage(accept, decline);
                     target.sendMessage(" ");
@@ -235,8 +243,7 @@ public class MapSelectionMenu extends Menu {
     }
 
     private boolean isAllowedForCurrentMode(Map<?, ?> entry) {
-        String modeValue = getString(entry, "mode", "both");
-        modeValue = modeValue.toLowerCase();
+        String modeValue = getString(entry, "mode", "both").toLowerCase();
         return switch (modeValue) {
             case "practice", "duel" -> duelMode;
             case "tournament" -> !duelMode;
@@ -251,9 +258,7 @@ public class MapSelectionMenu extends Menu {
 
     private int getInt(Map<?, ?> entry, String key, int defaultValue) {
         Object value = entry.get(key);
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
+        if (value instanceof Number number) return number.intValue();
         try {
             return Integer.parseInt(String.valueOf(value));
         } catch (Exception ignored) {

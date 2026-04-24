@@ -65,13 +65,29 @@ public class GameManager {
         return true;
     }
 
+    private String getDownloadUrlForEgg(int eggId) {
+        List<Map<?, ?>> maps = plugin.getConfig().getMapList("pterodactyl.maps");
+        if (maps == null) return "";
+        for (Map<?, ?> entry : maps) {
+            Object id = entry.get("egg-id");
+            if (id instanceof Number && ((Number) id).intValue() == eggId) {
+                Object url = entry.get("download-url");
+                System.out.println(String.valueOf(url));
+                return url != null ? String.valueOf(url) : "";
+            }
+        }
+        return "";
+    }
+
     private void spawnServer(GameSession session) {
         session.setStatus(GameSession.Status.STARTING);
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
+                String downloadUrl = getDownloadUrlForEgg(session.getEggId());
+
                 PterodactylClient.ServerInfo info = plugin.getPterodactylClient()
-                        .createServer(session.getSessionId(), session.getEggId());
+                        .createServer(session.getSessionId(), session.getEggId(), downloadUrl);
 
                 session.setPterodactylInternalId(info.serverId());
                 session.setPterodactylNumericId(info.numericId());
@@ -86,7 +102,8 @@ public class GameManager {
 
                 plugin.getLogger().info("Serveur spawné : " + info.serverId()
                         + " numericId=" + info.numericId()
-                        + " port=" + info.port());
+                        + " port=" + info.port()
+                        + " downloadUrl=" + downloadUrl);
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Erreur spawn serveur : " + e.getMessage());

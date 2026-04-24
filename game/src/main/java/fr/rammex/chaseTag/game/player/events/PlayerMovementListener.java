@@ -13,7 +13,18 @@ public class PlayerMovementListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game == null || game.getGameState() != GameState.PLAYING) return;
+        if (game == null) return;
+        
+        if (game.getGameState() == GameState.PAUSE) {
+            if (event.getFrom().getX() != event.getTo().getX() || 
+                event.getFrom().getY() != event.getTo().getY() || 
+                event.getFrom().getZ() != event.getTo().getZ()) {
+                event.setTo(event.getFrom());
+            }
+            return;
+        }
+
+        if (game.getGameState() != GameState.PLAYING) return;
 
         // Bloquer le mouvement pendant le countdown (permet quand même de tourner la tête)
         if (game.isCountdown()) {
@@ -34,9 +45,7 @@ public class PlayerMovementListener implements Listener {
 
         if (!game.getArena().isInside(event.getTo())) {
             // Empêcher la sortie
-            event.setCancelled(true);
-            // On le téléporte légèrement vers l'intérieur pour éviter les tremblements
-            event.getPlayer().teleport(event.getFrom());
+            event.setTo(event.getFrom());
             event.getPlayer().sendMessage(ChatColor.RED + "Vous ne pouvez pas sortir de l'arène !");
         }
     }
