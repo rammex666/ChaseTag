@@ -214,7 +214,7 @@ public class PlayerListener implements Listener {
         if (event.getClickedBlock() != null) {
             Material type = event.getClickedBlock().getType();
             String typeName = type.name();
-            if (typeName.contains("TRAPDOOR") || typeName.contains("FENCE_GATE") || typeName.contains("DOOR")) {
+            if (typeName.contains("TRAPDOOR") || typeName.contains("FENCE_GATE") || typeName.contains("DOOR") || typeName.contains("SIGN")) {
                 event.setCancelled(true);
             }
         }
@@ -228,8 +228,13 @@ public class PlayerListener implements Listener {
         }
         
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game != null && (game.isCountdown() || game.getGameState() == GameState.PAUSE)) {
-            event.setCancelled(true);
+        if (game != null) {
+            if (game.getGameState() == GameState.WAITING) {
+                return; // Autoriser le mouvement d'inventaire avant le début
+            }
+            if (game.isCountdown() || game.getGameState() == GameState.PAUSE) {
+                event.setCancelled(true);
+            }
         }
     }
 

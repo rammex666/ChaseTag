@@ -40,6 +40,11 @@ public class ActiveGamesMenu extends Menu {
                     meta.setDisplayName(ChatColor.GREEN + "Partie de " + Bukkit.getOfflinePlayer(session.getOwnerUuid()).getName());
                     List<String> lore = new ArrayList<>();
                     lore.add(ChatColor.GRAY + "Type: " + ChatColor.YELLOW + session.getType().name());
+                    lore.add(ChatColor.GRAY + "Joueurs:");
+                    session.getPlayers().forEach(uuid -> {
+                        lore.add(ChatColor.GRAY + " - " + ChatColor.WHITE + Bukkit.getOfflinePlayer(uuid).getName());
+                    });
+                    lore.add("");
                     lore.add(ChatColor.GRAY + "ID: " + ChatColor.DARK_GRAY + session.getSessionId());
                     lore.add("");
                     lore.add(ChatColor.YELLOW + "Cliquez pour regarder !");
@@ -74,10 +79,18 @@ public class ActiveGamesMenu extends Menu {
 
         // Extraire l'ID de la session depuis le lore
         List<String> lore = meta.getLore();
-        if (lore == null || lore.size() < 2) return;
+        if (lore == null) return;
         
-        String idLine = lore.get(1); // "ID: sessionId"
-        String sessionId = ChatColor.stripColor(idLine).replace("ID: ", "").trim();
+        String sessionId = "";
+        for (String line : lore) {
+            String plainLine = ChatColor.stripColor(line);
+            if (plainLine.startsWith("ID: ")) {
+                sessionId = plainLine.replace("ID: ", "").trim();
+                break;
+            }
+        }
+
+        if (sessionId.isEmpty()) return;
 
         GameSession session = ChaseTagLobby.getInstance().getGameManager().getSession(sessionId);
         if (session != null) {

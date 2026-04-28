@@ -12,6 +12,8 @@ public class PlayerMovementListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.getPlayer().getGameMode() == org.bukkit.GameMode.SPECTATOR) return;
+
         Game game = ChaseTag.getInstance().getGameManager().getGame();
         if (game == null) return;
         
