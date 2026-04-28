@@ -43,6 +43,10 @@ public class MenuListener implements Listener {
                 playerSelectionMenu.handleClick(event);
                 return;
             }
+            if (holder instanceof ActiveGamesMenu activeGamesMenu) {
+                activeGamesMenu.handleClick(event);
+                return;
+            }
             String title = PlainTextComponentSerializer.plainText().serialize(event.getView().title());
             TournamentManager tournamentManager = ChaseTagLobby.getInstance().getTournamentManager();
 

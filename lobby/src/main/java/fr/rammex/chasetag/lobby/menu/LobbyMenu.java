@@ -28,16 +28,6 @@ public class LobbyMenu extends Menu {
     }
 
     private void setMenuItems() {
-        // Duel button (Blaze Rod)
-        ItemStack duelButton = new ItemStack(Material.BLAZE_ROD);
-        ItemMeta duelMeta = duelButton.getItemMeta();
-        if (duelMeta != null) {
-            duelMeta.setDisplayName(ChatColor.GOLD + "Lancer un Duel");
-            duelMeta.setLore(List.of(ChatColor.GRAY + "Affrontez un autre joueur ou entraînez-vous seul."));
-            duelButton.setItemMeta(duelMeta);
-        }
-        inventory.setItem(22, duelButton);
-
         // Stats button (Book)
         ItemStack statsButton = new ItemStack(Material.BOOK);
         ItemMeta statsMeta = statsButton.getItemMeta();
@@ -46,7 +36,27 @@ public class LobbyMenu extends Menu {
             statsMeta.setLore(List.of(ChatColor.GRAY + "Visualisez vos victoires et défaites."));
             statsButton.setItemMeta(statsMeta);
         }
-        inventory.setItem(20, statsButton);
+        inventory.setItem(19, statsButton);
+
+        // Duel button (Blaze Rod)
+        ItemStack duelButton = new ItemStack(Material.BLAZE_ROD);
+        ItemMeta duelMeta = duelButton.getItemMeta();
+        if (duelMeta != null) {
+            duelMeta.setDisplayName(ChatColor.GOLD + "Lancer un Duel");
+            duelMeta.setLore(List.of(ChatColor.GRAY + "Affrontez un autre joueur ou entraînez-vous seul."));
+            duelButton.setItemMeta(duelMeta);
+        }
+        inventory.setItem(21, duelButton);
+
+        // Spectate button (Ender Eye)
+        ItemStack spectateButton = new ItemStack(Material.ENDER_EYE);
+        ItemMeta spectateMeta = spectateButton.getItemMeta();
+        if (spectateMeta != null) {
+            spectateMeta.setDisplayName(ChatColor.GREEN + "Regarder une partie");
+            spectateMeta.setLore(List.of(ChatColor.GRAY + "Devenez spectateur d'un match en cours."));
+            spectateButton.setItemMeta(spectateMeta);
+        }
+        inventory.setItem(23, spectateButton);
 
         // Map list / Info button (Map)
         ItemStack infoButton = new ItemStack(Material.MAP);
@@ -56,7 +66,7 @@ public class LobbyMenu extends Menu {
             infoMeta.setLore(List.of(ChatColor.GRAY + "En savoir plus sur ChaseTag."));
             infoButton.setItemMeta(infoMeta);
         }
-        inventory.setItem(24, infoButton);
+        inventory.setItem(25, infoButton);
 
         // Add a button at the bottom right (slot 53) for admins
         if (player.hasPermission("chasetag.admin.menu")) {
@@ -92,6 +102,8 @@ public class LobbyMenu extends Menu {
 
         if (displayName.equals(ChatColor.GOLD + "Lancer un Duel")) {
             new PlayerSelectionMenu(player, ChaseTagLobby.getInstance()).open();
+        } else if (displayName.equals(ChatColor.GREEN + "Regarder une partie")) {
+            new ActiveGamesMenu(player).open();
         } else if (displayName.equals(ChatColor.RED + "Menu Administrateur")) {
             if (player.hasPermission("chasetag.admin.menu")) {
                 new TournamentAdminMenu(player, ChaseTagLobby.getInstance().getTournamentManager()).open();

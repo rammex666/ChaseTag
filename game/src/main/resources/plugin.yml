@@ -6,6 +6,8 @@ commands:
   testgame:
     description: Lancer une partie de test
     permission: chasetag.admin
+  leave:
+    description: Abandonner la partie en cours
   gametestdev:
     description: Lancer une partie de test dev (avec cochon)
     permission: chasetag.admin

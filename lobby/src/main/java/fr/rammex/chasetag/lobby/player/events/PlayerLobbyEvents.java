@@ -1,5 +1,6 @@
 package fr.rammex.chasetag.lobby.player.events;
 
+import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.player.Player;
 import fr.rammex.chasetag.lobby.player.PlayerManager;
 import fr.rammex.chasetag.lobby.player.PlayerMongoRepository;
@@ -76,6 +77,19 @@ public class PlayerLobbyEvents implements Listener {
         
         if (playerMongoRepository != null) {
             playerMongoRepository.savePlayer(stored);
+        }
+
+        // Redirection si une partie est en cours
+        fr.rammex.chasetag.lobby.game.GameSession session = ChaseTagLobby.getInstance().getGameManager().getSessionByPlayer(player.getUniqueId());
+        if (session != null && session.getStatus() == fr.rammex.chasetag.lobby.game.GameSession.Status.PLAYING) {
+            String serverId = session.getPterodactylServerId();
+            if (serverId != null) {
+                player.sendMessage("§aReconnexion à votre partie en cours...");
+                try (redis.clients.jedis.Jedis jedis = ChaseTagLobby.getInstance().getJedisPool().getResource()) {
+                    jedis.publish(fr.rammex.chasetag.common.RedisChannel.SEND_TO_LOBBY,
+                        player.getUniqueId().toString() + ":" + serverId);
+                }
+            }
         }
     }
 

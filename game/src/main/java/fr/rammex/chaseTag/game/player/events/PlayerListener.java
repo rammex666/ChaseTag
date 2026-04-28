@@ -14,6 +14,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
@@ -190,11 +191,17 @@ public class PlayerListener implements Listener {
         Game game = ChaseTag.getInstance().getGameManager().getGame();
         if (game == null) return;
 
-        // Boussole spectateur
+        // Items spectateur
         if (player.getGameMode() == GameMode.SPECTATOR && 
             (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
-            if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS) {
+            ItemStack item = player.getInventory().getItemInMainHand();
+            if (item.getType() == Material.COMPASS) {
                 SpectatorManager.handleSpectatorInteract(player, game);
+                event.setCancelled(true);
+                return;
+            } else if (item.getType() == Material.RED_BED) {
+                sendToLobby(player);
+                event.setCancelled(true);
                 return;
             }
         }
@@ -214,9 +221,34 @@ public class PlayerListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockPhysics(BlockPhysicsEvent event) {
+    public void onInventoryClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (event.getWhoClicked().getGameMode() == GameMode.SPECTATOR) {
+            SpectatorManager.handleMenuClick(event);
+            return;
+        }
+        
         Game game = ChaseTag.getInstance().getGameManager().getGame();
-        if (game != null && event.getBlock().getType() == Material.CACTUS) {
+        if (game != null && (game.isCountdown() || game.getGameState() == GameState.PAUSE)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private void sendToLobby(org.bukkit.entity.Player player) {
+        player.sendMessage("§cRetour au lobby...");
+        try {
+            java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+            java.io.DataOutputStream out = new java.io.DataOutputStream(b);
+            out.writeUTF("Connect");
+            out.writeUTF("lobby"); 
+            player.sendPluginMessage(ChaseTag.getInstance(), "BungeeCord", b.toByteArray());
+        } catch (java.io.IOException e) {
+            player.sendMessage("§cErreur lors de la redirection vers le lobby.");
+        }
+    }
+
+    @EventHandler
+    public void onBlockPhysics(BlockPhysicsEvent event) {
+        if (event.getBlock().getType() == Material.CACTUS) {
             event.setCancelled(true);
         }
     }
@@ -297,7 +329,7 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL || event.getCause() == EntityDamageEvent.DamageCause.CONTACT) {
             event.setCancelled(true);
         }
     }

@@ -1,6 +1,5 @@
 package fr.rammex.chaseTag.game;
 
-import fr.rammex.chaseTag.game.arena.Arena;
 import fr.rammex.chaseTag.game.arena.ArenaManager;
 import fr.rammex.chaseTag.game.arena.creation.event.ArenaCreationEvent;
 import fr.rammex.chaseTag.game.command.ArenaCommand;
@@ -114,7 +113,10 @@ public final class ChaseTag extends JavaPlugin {
         redisPublisher.publishServerReady();
         redisListener.start();
 
+        this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+
         getCommand("testgame").setExecutor(new TestGameCommand());
+        getCommand("leave").setExecutor(new fr.rammex.chaseTag.game.command.LeaveCommand());
         getCommand("gametestdev").setExecutor(new GameTestDevCommand());
         getCommand("arena").setExecutor(new ArenaCommand());
         RoleCommand roleCommand = new RoleCommand();

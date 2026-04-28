@@ -36,6 +36,7 @@ public class GameManager {
 
     public void startGame() {
         if (game == null) return;
+        cleanupEntities();
         game.setGameState(GameState.PLAYING);
         
         org.bukkit.World world = game.getArena().getRedSpawn().getWorld();
@@ -350,6 +351,32 @@ public class GameManager {
         placedBlocks.add(block);
     }
 
+    public void forceEndGame(Player leaver) {
+        if (game == null) return;
+        
+        Player winner = game.getPlayers().stream()
+                .filter(p -> !p.equals(leaver))
+                .findFirst()
+                .orElse(null);
+
+        String winnerName = "Aucun";
+        String winnerUuid = "none";
+        
+        if (winner != null) {
+            winnerUuid = winner.getPlayerUUID();
+            if (winner.getBukkitPlayer() != null) {
+                winnerName = winner.getBukkitPlayer().getName();
+            } else {
+                winnerName = winnerUuid;
+            }
+            // On lui donne un score symbolique pour la victoire par abandon
+            game.addScore(winnerUuid, 1);
+        }
+
+        Bukkit.broadcastMessage(ChatColor.RED + leaver.getBukkitPlayer().getName() + " a abandonné la partie !");
+        endGame();
+    }
+
     private void endGame() {
         game.setGameState(GameState.END);
         
@@ -386,5 +413,22 @@ public class GameManager {
 
     public Game getGame() {
         return game;
+    }
+
+    private void cleanupEntities() {
+        if (game == null || game.getArena() == null) return;
+        org.bukkit.World world = game.getArena().getRedSpawn().getWorld();
+        if (world == null) return;
+
+        for (Entity entity : world.getEntities()) {
+            if (entity.getType() == EntityType.PIG) {
+                if (entity.getCustomName() != null && entity.getCustomName().contains("Adversaire de Test")) {
+                    entity.remove();
+                } else if (game.getArena().isInside(entity.getLocation())) {
+                    // Supprimer tout cochon dans l'arène par sécurité
+                    entity.remove();
+                }
+            }
+        }
     }
 }
