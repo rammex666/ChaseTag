@@ -121,6 +121,16 @@ public class LobbyRedisListener {
                         
                         plugin.getPlayerMongoRepository().savePlayer(player);
                         plugin.getLogger().info("Stats sauvegardées pour " + player.getPlayerName() + " (" + gameType + ")");
+
+                        // Reset readiness for tournament matches
+                        plugin.getTournamentManager().resetPlayerReady(player.getPlayerName());
+                        org.bukkit.entity.Player onlinePlayer = Bukkit.getPlayer(player.getPlayerName());
+                        if (onlinePlayer != null) {
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                // Refresh the ready item in their inventory
+                                new fr.rammex.chasetag.lobby.listener.LobbyListener(plugin).updateReadyItem(onlinePlayer);
+                            });
+                        }
                     });
                 }
             }

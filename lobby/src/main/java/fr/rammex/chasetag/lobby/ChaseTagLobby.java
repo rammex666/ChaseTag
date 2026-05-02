@@ -3,6 +3,7 @@ package fr.rammex.chasetag.lobby;
 import fr.rammex.chasetag.lobby.command.DuelCommand;
 import fr.rammex.chasetag.lobby.command.PlayCommand;
 import fr.rammex.chasetag.lobby.database.MongoManager;
+import fr.rammex.chasetag.lobby.discord.DiscordBot;
 import fr.rammex.chasetag.lobby.duel.DuelRequestManager;
 import fr.rammex.chasetag.lobby.game.GameManager;
 import fr.rammex.chasetag.lobby.listener.LobbyListener;
@@ -30,6 +31,7 @@ public final class ChaseTagLobby extends JavaPlugin {
     private TournamentManager tournamentManager;
     private DuelRequestManager duelRequestManager;
     private LobbyRedisListener redisListener;
+    private DiscordBot discordBot;
 
     @Override
     public void onEnable() {
@@ -45,11 +47,11 @@ public final class ChaseTagLobby extends JavaPlugin {
         // Redis
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(10);
-        
+
         String redisHost = getConfig().getString("redis.host", "localhost");
         int redisPort = getConfig().getInt("redis.port", 6379);
         String redisPassword = getConfig().getString("redis.password", "");
-        
+
         if (redisPassword != null && !redisPassword.isEmpty()) {
             this.jedisPool = new JedisPool(
                 poolConfig,
@@ -81,6 +83,9 @@ public final class ChaseTagLobby extends JavaPlugin {
         this.playerMongoRepository = new PlayerMongoRepository(this.mongoManager);
         this.duelRequestManager = new DuelRequestManager();
 
+        // Discord Bot
+        this.discordBot = new DiscordBot(this);
+
         // Listener Redis (thread séparé)
         this.redisListener = new LobbyRedisListener(this);
         this.redisListener.start();
@@ -106,6 +111,7 @@ public final class ChaseTagLobby extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (discordBot != null) discordBot.shutdown();
         if (redisListener != null) redisListener.stop();
         if (jedisPool != null) jedisPool.close();
         if (tournamentManager != null) tournamentManager.save();
@@ -122,4 +128,5 @@ public final class ChaseTagLobby extends JavaPlugin {
     public GameManager getGameManager() { return gameManager; }
     public TournamentManager getTournamentManager() { return tournamentManager; }
     public DuelRequestManager getDuelRequestManager() { return duelRequestManager; }
+    public DiscordBot getDiscordBot() { return discordBot; }
 }

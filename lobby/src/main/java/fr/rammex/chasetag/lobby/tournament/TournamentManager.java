@@ -20,6 +20,7 @@ public class TournamentManager {
     private final List<TournamentMatch> matches = new ArrayList<>();
     private String currentPhase = "Phase 1";
     private Mode mode = Mode.TOURNAMENT;
+    private boolean matchesStarted = false;
 
     public enum Mode {
         TOURNAMENT,
@@ -33,6 +34,22 @@ public class TournamentManager {
         load();
         ensureCurrentPhaseValid();
         initializePhaseMatchesIfNeeded();
+    }
+
+    public boolean isMatchesStarted() {
+        return matchesStarted;
+    }
+
+    public void setMatchesStarted(boolean matchesStarted) {
+        this.matchesStarted = matchesStarted;
+        save();
+        if (matchesStarted) {
+            startAllMatches();
+        }
+    }
+
+    private void startAllMatches() {
+        new ArrayList<>(matches).forEach(this::maybeStartMatch);
     }
 
     public Mode getMode() {
@@ -243,11 +260,54 @@ public class TournamentManager {
                 .findFirst();
     }
 
-    public void assignPlayerToMatch(String phase, int matchId, String playerName) {
+    public Optional<TournamentMatch> getMatchForPlayer(String playerName) {
+        if (playerName == null) return Optional.empty();
+        return matches.stream()
+                .filter(match -> match.getPhase().equals(currentPhase) && match.containsPlayer(playerName))
+                .findFirst();
+    }
+
+    public synchronized void setPlayerReady(String phase, int pool, int matchId, String playerName, boolean ready) {
+        getMatch(phase, pool, matchId).ifPresent(match -> {
+            TournamentMatch updatedMatch;
+            if (playerName.equals(match.getPlayer1())) {
+                updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), match.getPlayer2String(), ready, match.isPlayer2Ready(), match.getEggId(), match.getMapName());
+            } else if (playerName.equals(match.getPlayer2())) {
+                updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), match.getPlayer2String(), match.isPlayer1Ready(), ready, match.getEggId(), match.getMapName());
+            } else {
+                return;
+            }
+            replaceMatch(match, updatedMatch);
+            save();
+            maybeStartMatch(updatedMatch);
+        });
+    }
+
+    public synchronized void resetPlayerReady(String playerName) {
+        getMatchForPlayer(playerName).ifPresent(match -> {
+            TournamentMatch updatedMatch;
+            if (playerName.equals(match.getPlayer1())) {
+                updatedMatch = new TournamentMatch(match.getPhase(), match.getPool(), match.getMatchId(), match.getPlayer1String(), match.getPlayer2String(), false, match.isPlayer2Ready(), match.getEggId(), match.getMapName());
+            } else if (playerName.equals(match.getPlayer2())) {
+                updatedMatch = new TournamentMatch(match.getPhase(), match.getPool(), matchIdForReset(match), match.getPlayer1String(), match.getPlayer2String(), match.isPlayer1Ready(), false, match.getEggId(), match.getMapName());
+            } else {
+                return;
+            }
+            replaceMatch(match, updatedMatch);
+            save();
+        });
+    }
+
+    // Helper for resetPlayerReady because of variable scoping issues in ifPresent
+    private int matchIdForReset(TournamentMatch match) {
+        return match.getMatchId();
+    }
+
+    public synchronized void assignPlayerToMatch(String phase, int matchId, String playerName) {
         assignPlayerToMatch(phase, 0, matchId, playerName);
     }
 
-    public void assignPlayerToMatch(String phase, int pool, int matchId, String playerName) {
+    public synchronized void assignPlayerToMatch(String phase, int pool, int matchId, String playerName) {
         if (playerName == null || playerName.isBlank()) {
             return;
         }
@@ -255,18 +315,26 @@ public class TournamentManager {
         TournamentMatch match = getMatch(phase, pool, matchId).orElseGet(() -> createMatch(phase, pool, matchId));
         TournamentMatch updatedMatch;
         if (match.getPlayer1() == null) {
-            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, playerName, match.getPlayer2String(), match.getEggId(), match.getMapName());
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, playerName, match.getPlayer2String(), false, false, match.getEggId(), match.getMapName());
         } else if (match.getPlayer2() == null) {
-            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, match.getEggId(), match.getMapName());
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, false, false, match.getEggId(), match.getMapName());
         } else {
-            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, match.getEggId(), match.getMapName());
+            updatedMatch = new TournamentMatch(phase, match.getPool(), matchId, match.getPlayer1String(), playerName, false, false, match.getEggId(), match.getMapName());
         }
         replaceMatch(match, updatedMatch);
         save();
+        refreshPlayerInventory(playerName);
         maybeStartMatch(updatedMatch);
     }
 
-    public void setMatchMap(String phase, int pool, int matchId, int eggId, String mapName) {
+    private void refreshPlayerInventory(String playerName) {
+        org.bukkit.entity.Player player = Bukkit.getPlayerExact(playerName);
+        if (player != null) {
+            new fr.rammex.chasetag.lobby.listener.LobbyListener(plugin).updateReadyItem(player);
+        }
+    }
+
+    public synchronized void setMatchMap(String phase, int pool, int matchId, int eggId, String mapName) {
         if (phase == null || phase.isBlank()) {
             return;
         }
@@ -277,18 +345,28 @@ public class TournamentManager {
                 matchId,
                 match.getPlayer1String(),
                 match.getPlayer2String(),
+                match.isPlayer1Ready(),
+                match.isPlayer2Ready(),
                 eggId,
                 mapName
         );
         replaceMatch(match, updatedMatch);
         save();
+        if (updatedMatch.getPlayer1() != null) refreshPlayerInventory(updatedMatch.getPlayer1());
+        if (updatedMatch.getPlayer2() != null) refreshPlayerInventory(updatedMatch.getPlayer2());
         maybeStartMatch(updatedMatch);
     }
 
     private void maybeStartMatch(TournamentMatch match) {
+        if (!matchesStarted) return;
         if (match == null || match.getPlayer1() == null || match.getPlayer2() == null || !match.hasMap()) {
             return;
         }
+
+        if (!match.isPlayer1Ready() || !match.isPlayer2Ready()) {
+            return;
+        }
+
         org.bukkit.entity.Player player1 = Bukkit.getPlayerExact(match.getPlayer1());
         org.bukkit.entity.Player player2 = Bukkit.getPlayerExact(match.getPlayer2());
         if (player1 == null || player2 == null) {
@@ -305,6 +383,11 @@ public class TournamentManager {
         if (joined) {
             player1.sendMessage("§aMatch de tournoi en cours de démarrage : §e" + match.getMapName());
             player2.sendMessage("§aMatch de tournoi en cours de démarrage : §e" + match.getMapName());
+            
+            // Discord Log
+            if (plugin.getDiscordBot() != null) {
+                plugin.getDiscordBot().sendGameStartLog(player1.getName(), player2.getName(), match.getMapName());
+            }
         }
     }
 
@@ -316,13 +399,13 @@ public class TournamentManager {
             if (match.containsPlayer(playerName)) {
                 String player1 = match.getPlayer1() != null && !match.getPlayer1().equals(playerName) ? match.getPlayer1String() : "";
                 String player2 = match.getPlayer2() != null && !match.getPlayer2().equals(playerName) ? match.getPlayer2String() : "";
-                replaceMatch(match, new TournamentMatch(match.getPhase(), match.getPool(), match.getMatchId(), player1, player2, match.getEggId(), match.getMapName()));
+                replaceMatch(match, new TournamentMatch(match.getPhase(), match.getPool(), match.getMatchId(), player1, player2, false, false, match.getEggId(), match.getMapName()));
             }
         }
     }
 
     private TournamentMatch createMatch(String phase, int pool, int matchId) {
-        TournamentMatch match = new TournamentMatch(phase, pool, matchId, "", "", 0, "");
+        TournamentMatch match = new TournamentMatch(phase, pool, matchId, "", "", false, false, 0, "");
         matches.add(match);
         return match;
     }
@@ -336,6 +419,7 @@ public class TournamentManager {
         Document document = new Document("_id", "tournament")
                 .append("phase", currentPhase)
                 .append("mode", mode.name())
+                .append("matchesStarted", matchesStarted)
                 .append("poules", new Document(playerPoule))
                 .append("eliminated", new ArrayList<>(eliminatedPlayers))
                 .append("matches", matches.stream().map(TournamentMatch::toDocument).collect(Collectors.toList()));
@@ -360,6 +444,9 @@ public class TournamentManager {
             } catch (IllegalArgumentException | NullPointerException ignored) {
                 mode = Mode.TOURNAMENT;
             }
+        }
+        if (document.containsKey("matchesStarted")) {
+            matchesStarted = document.getBoolean("matchesStarted", false);
         }
 
         Document poulesDocument = document.get("poules", Document.class);

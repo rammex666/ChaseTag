@@ -54,6 +54,20 @@ public class PlayerLobbyEvents implements Listener {
     @EventHandler
     public void onPlayerJoinFirstTime(PlayerJoinEvent event){
         org.bukkit.entity.Player player = event.getPlayer();
+
+        // Whitelist check
+        if (ChaseTagLobby.getInstance().getConfig().getBoolean("discord.whitelist-enabled", false)) {
+            Player p = PlayerManager.getPlayer(player.getUniqueId().toString());
+            if (p == null) {
+                // Check in DB if not in memory
+                p = playerMongoRepository.getPlayerByUUID(player.getUniqueId().toString()).orElse(null);
+            }
+
+            if (p == null || !((Boolean) p.getPlayerData().getOrDefault("whitelisted", false))) {
+                player.kick(Component.text("§cVous n'êtes pas sur la whitelist.\n§7Rejoignez notre Discord pour vous faire whitelist !"));
+                return;
+            }
+        }
         
         // Priorité au chargement depuis MongoDB pour avoir les stats fraîches
         Player stored = playerMongoRepository != null ? 

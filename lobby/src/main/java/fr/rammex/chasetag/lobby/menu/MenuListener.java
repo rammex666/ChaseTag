@@ -134,6 +134,14 @@ public class MenuListener implements Listener {
             return;
         }
 
+        if (displayName.contains("Lancement des matchs")) {
+            boolean started = !tournamentManager.isMatchesStarted();
+            tournamentManager.setMatchesStarted(started);
+            player.sendMessage(started ? ChatColor.GREEN + "Lancement des matchs autorisé !" : ChatColor.RED + "Lancement des matchs bloqué.");
+            new TournamentAdminMenu(player, tournamentManager).open();
+            return;
+        }
+
         if (displayName.equals(ChatColor.YELLOW + "Retour")) {
             new LobbyMenu(player).open();
         }

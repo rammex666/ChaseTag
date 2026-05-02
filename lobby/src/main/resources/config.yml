@@ -53,3 +53,10 @@ tournament:
     - name: "Final"
       type: "bracket"
       bracketSize: 2
+
+discord:
+  token: "YOUR_DISCORD_TOKEN"
+  guild-id: "YOUR_GUILD_ID"
+  admin-role-id: "YOUR_ADMIN_ROLE_ID"
+  whitelist-enabled: true
+  game-logs-channel-id: ""

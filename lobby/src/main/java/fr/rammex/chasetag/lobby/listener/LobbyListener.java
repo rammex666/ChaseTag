@@ -2,6 +2,7 @@ package fr.rammex.chasetag.lobby.listener;
 
 import fr.rammex.chasetag.lobby.ChaseTagLobby;
 import fr.rammex.chasetag.lobby.menu.LobbyMenu;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -29,7 +30,7 @@ public class LobbyListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        giveCompass(player);
+        giveLobbyItems(player);
         player.setFoodLevel(20);
         player.setHealth(20);
     }
@@ -58,20 +59,43 @@ public class LobbyListener implements Listener {
         event.setCancelled(true);
     }
 
-    private void giveCompass(Player player) {
+    private void giveLobbyItems(Player player) {
         ItemStack compass = new ItemStack(Material.COMPASS);
         ItemMeta meta = compass.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.GOLD + "Menu Principal " + ChatColor.GRAY + "(Clic Droit)");
             compass.setItemMeta(meta);
         }
-        player.getInventory().setItem(4, compass); // Put it in the middle slot
+        player.getInventory().setItem(4, compass);
+
+        updateReadyItem(player);
+    }
+
+    public void updateReadyItem(Player player) {
+        var tournamentManager = plugin.getTournamentManager();
+        var matchOpt = tournamentManager.getMatchForPlayer(player.getName());
+
+        if (matchOpt.isEmpty()) {
+            player.getInventory().setItem(8, null);
+            return;
+        }
+
+        var match = matchOpt.get();
+        boolean isReady = match.isPlayerReady(player.getName());
+
+        ItemStack item = new ItemStack(isReady ? Material.GREEN_CONCRETE : Material.RED_CONCRETE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(isReady ? ChatColor.GREEN + "Prêt" : ChatColor.RED + "Pas Prêt");
+            item.setItemMeta(meta);
+        }
+        player.getInventory().setItem(8, item);
     }
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
-        if (isCompass(item)) {
+        if (isCompass(item) || isReadyItem(item)) {
             event.setCancelled(true);
         }
     }
@@ -81,9 +105,37 @@ public class LobbyListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (isCompass(item)) {
-                new LobbyMenu(player).open();
+                if (event.getAction().name().contains("RIGHT")) {
+                    new LobbyMenu(player).open();
+                }
+            } else if (isReadyItem(item)) {
+                toggleReady(player);
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    private void toggleReady(Player player) {
+        var tournamentManager = plugin.getTournamentManager();
+        var matchOpt = tournamentManager.getMatchForPlayer(player.getName());
+
+        if (matchOpt.isPresent()) {
+            var match = matchOpt.get();
+            boolean currentReady = match.isPlayerReady(player.getName());
+            tournamentManager.setPlayerReady(match.getPhase(), match.getPool(), match.getMatchId(), player.getName(), !currentReady);
+            updateReadyItem(player);
+            player.sendMessage(ChatColor.YELLOW + "Statut prêt : " + (!currentReady ? ChatColor.GREEN + "PRÊT" : ChatColor.RED + "PAS PRÊT"));
+            
+            // Notify opponent
+            String opponentName = player.getName().equals(match.getPlayer1()) ? match.getPlayer2() : match.getPlayer1();
+            if (opponentName != null) {
+                Player opponent = Bukkit.getPlayerExact(opponentName);
+                if (opponent != null) {
+                    opponent.sendMessage(ChatColor.GOLD + player.getName() + ChatColor.YELLOW + " est maintenant " + (!currentReady ? ChatColor.GREEN + "PRÊT" : ChatColor.RED + "PAS PRÊT"));
+                    updateReadyItem(opponent);
+                }
             }
         }
     }
@@ -92,5 +144,11 @@ public class LobbyListener implements Listener {
         if (item == null || item.getType() != Material.COMPASS) return false;
         ItemMeta meta = item.getItemMeta();
         return meta != null && meta.getDisplayName().contains("Menu Principal");
+    }
+
+    private boolean isReadyItem(ItemStack item) {
+        if (item == null || (item.getType() != Material.RED_CONCRETE && item.getType() != Material.GREEN_CONCRETE)) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && (meta.getDisplayName().contains("Prêt") || meta.getDisplayName().contains("Pas Prêt"));
     }
 }

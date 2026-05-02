@@ -132,6 +132,16 @@ public class TournamentAdminMenu extends Menu {
         );
         inventory.setItem(32, eliminatedList);
 
+        ItemStack launchMatches = MenuUtils.createMenuItem(
+                tournamentManager.isMatchesStarted() ? Material.LIME_CONCRETE : Material.RED_CONCRETE,
+                (tournamentManager.isMatchesStarted() ? ChatColor.GREEN : ChatColor.RED) + "Lancement des matchs",
+                List.of(
+                        ChatColor.GRAY + "Statut: " + (tournamentManager.isMatchesStarted() ? ChatColor.GREEN + "AUTORISÉ" : ChatColor.RED + "BLOQUÉ"),
+                        ChatColor.GRAY + "Clique pour " + (tournamentManager.isMatchesStarted() ? "bloquer" : "autoriser") + " le lancement des matchs"
+                )
+        );
+        inventory.setItem(31, launchMatches);
+
         ItemStack back = MenuUtils.createBackButton(ChatColor.YELLOW + "Retour", ChatColor.GRAY + "Retour au menu principal");
         inventory.setItem(53, back);
     }
