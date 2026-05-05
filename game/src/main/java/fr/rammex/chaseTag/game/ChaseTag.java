@@ -177,6 +177,7 @@ public final class ChaseTag extends JavaPlugin {
         this.getServer().getPluginManager().registerEvents(new PlayerListener(),this);
         this.getServer().getPluginManager().registerEvents(new PlayerMovementListener(),this);
         this.getServer().getPluginManager().registerEvents(new ArenaCreationEvent(),this);
+        this.getServer().getPluginManager().registerEvents(new fr.rammex.chaseTag.game.game.CobwebListener(this),this);
     }
 
     public TimerManager getTimerManager() {

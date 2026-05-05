@@ -88,3 +88,9 @@ All future modifications to the project must be logged here with the date of the
 - **2026-05-02:** Integrated Discord Bot (JDA) for administrative tasks: Whitelist system (add/remove) and In-game rank management via slash commands. Added `discord` configuration section in `config.yml`.
 - **2026-05-02:** Added Game Logging system: Match starts are now logged to a Discord channel (configurable via `/setlogchannel`).
 - **2026-05-02:** Improved Tournament Flow: Players can now toggle ready/not ready status. Matches require an administrator's authorization (via "Lancement des matchs" in Admin Menu) AND dual-readiness to start. Ready status is automatically reset after each game.
+- **2026-05-05:** Fixed Discord logging for game starts.
+- **2026-05-05:** Added In-game Staff Module: /mute and /ban commands. Sanctions are pending and require validation via Discord using `/acceptstaff <id>`. Added staff-validation-channel-id to config.yml.
+- **2026-05-05:** Added /unmute and /unban commands (direct).
+- **2026-05-05:** Added /staff mode: Puts staff in GM 3, gives a compass to see and teleport to active games (cross-server), and an ice tool to freeze/unfreeze players.
+- **2026-05-05:** Added custom Cobweb item in-game: Spawns a 2x2 cobweb box for 2 seconds upon right-click. Item is given at the start of each round.
+- **2026-05-05:** Updated Discord whitelist command to support offline players: Automatically fetches UUID from Mojang API if the player has never joined.

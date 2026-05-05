@@ -32,6 +32,12 @@ public class PlayerLobbyEvents implements Listener {
         org.bukkit.entity.Player player = event.getPlayer();
         Player player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
 
+        if (player1 != null && Boolean.TRUE.equals(player1.getPlayerData("muted"))) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "Vous êtes muet ! Raison : " + ChatColor.WHITE + player1.getPlayerData("mute_reason"));
+            return;
+        }
+
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
         event.setCancelled(true);
         Rank playerRole = player1.getPlayerRole();
@@ -79,6 +85,11 @@ public class PlayerLobbyEvents implements Listener {
             if (stored == null) {
                 stored = new Player(player.getUniqueId().toString(), player.getName(), Rank.Joueur);
             }
+        }
+
+        if (stored != null && Boolean.TRUE.equals(stored.getPlayerData("banned"))) {
+            player.kick(Component.text("§cVous êtes banni de ce serveur.\n§7Raison: §f" + stored.getPlayerData("ban_reason")));
+            return;
         }
 
         // Toujours mettre à jour le nom si nécessaire

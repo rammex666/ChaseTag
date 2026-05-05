@@ -14,3 +14,15 @@ commands:
   duel:
     description: Commandes Duel / Pratique
     usage: /duel <request|accept|decline|cancel>
+  mute:
+    description: Mute un joueur (nécessite validation Discord)
+  ban:
+    description: Ban un joueur (nécessite validation Discord)
+  unmute:
+    description: Unmute un joueur
+  unban:
+    description: Unban un joueur
+  staff:
+    description: Active le mode staff (Spectateur + outils)
+  freeze:
+    description: Gèle un joueur

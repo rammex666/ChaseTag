@@ -60,3 +60,4 @@ discord:
   admin-role-id: "YOUR_ADMIN_ROLE_ID"
   whitelist-enabled: true
   game-logs-channel-id: ""
+  staff-validation-channel-id: ""

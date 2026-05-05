@@ -131,6 +131,7 @@ public class MapSelectionMenu extends Menu {
         ));
     }
 
+    @Override
     public void handleClick(InventoryClickEvent event) {
         event.setCancelled(true);
         ItemStack item = event.getCurrentItem();

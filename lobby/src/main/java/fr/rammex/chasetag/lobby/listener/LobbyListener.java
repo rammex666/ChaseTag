@@ -16,6 +16,10 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import fr.rammex.chasetag.lobby.menu.StaffTeleportMenu;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -101,6 +105,26 @@ public class LobbyListener implements Listener {
     }
 
     @EventHandler
+    public void onMove(PlayerMoveEvent event) {
+        if (plugin.getStaffModeManager().isFrozen(event.getPlayer().getUniqueId())) {
+            if (event.getFrom().getX() != event.getTo().getX() || event.getFrom().getZ() != event.getTo().getZ()) {
+                event.setTo(event.getFrom());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        if (event.getRightClicked() instanceof Player target) {
+            Player staff = event.getPlayer();
+            ItemStack item = staff.getInventory().getItemInMainHand();
+            if (item.getType() == Material.ICE && item.hasItemMeta() && item.getItemMeta().getDisplayName().contains("Geler")) {
+                plugin.getStaffModeManager().toggleFreeze(staff, target);
+            }
+        }
+    }
+
+    @EventHandler
     public void onInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
@@ -108,7 +132,11 @@ public class LobbyListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (isCompass(item)) {
                 if (event.getAction().name().contains("RIGHT")) {
-                    new LobbyMenu(player).open();
+                    if (plugin.getStaffModeManager().isStaffMode(player.getUniqueId())) {
+                        new StaffTeleportMenu(player).open();
+                    } else {
+                        new LobbyMenu(player).open();
+                    }
                 }
             } else if (isReadyItem(item)) {
                 toggleReady(player);

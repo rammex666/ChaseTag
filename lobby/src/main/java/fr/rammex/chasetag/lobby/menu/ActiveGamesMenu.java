@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ActiveGamesMenu extends Menu {
-    private Inventory inventory;
 
     public ActiveGamesMenu(Player player) {
         super(player);
@@ -69,6 +68,7 @@ public class ActiveGamesMenu extends Menu {
         }
     }
 
+    @Override
     public void handleClick(InventoryClickEvent event) {
         event.setCancelled(true);
         ItemStack item = event.getCurrentItem();

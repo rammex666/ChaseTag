@@ -29,56 +29,12 @@ public class MenuListener implements Listener {
             return;
         }
 
-        if (holder instanceof Menu) {
+        if (holder instanceof Menu menu) {
             event.setCancelled(true);
-            if (holder instanceof MapSelectionMenu mapSelectionMenu) {
-                mapSelectionMenu.handleClick(event);
-                return;
-            }
-            if (holder instanceof LobbyMenu lobbyMenu) {
-                lobbyMenu.handleClick(event);
-                return;
-            }
-            if (holder instanceof PlayerSelectionMenu playerSelectionMenu) {
-                playerSelectionMenu.handleClick(event);
-                return;
-            }
-            if (holder instanceof ActiveGamesMenu activeGamesMenu) {
-                activeGamesMenu.handleClick(event);
-                return;
-            }
-            String title = PlainTextComponentSerializer.plainText().serialize(event.getView().title());
-            TournamentManager tournamentManager = ChaseTagLobby.getInstance().getTournamentManager();
-
-            if (title.equals("Menu Principal") && event.getSlot() == 53) {
-                if (player.hasPermission("chasetag.admin.menu")) {
-                    new TournamentAdminMenu(player, tournamentManager).open();
-                } else {
-                    player.sendMessage(ChatColor.RED + "Vous n'avez pas la permission d'ouvrir le menu administrateur.");
-                }
-                return;
-            }
-
-            if (title.equals("Admin Tournoi")) {
-                handleAdminMenuClick(player, currentItem, tournamentManager);
-                return;
-            }
-
-            if (title.startsWith("Poule ")) {
-                handlePouleMenuClick(player, currentItem, tournamentManager, title);
-                return;
-            }
-
-            if (title.startsWith("Bracket ")) {
-                handleBracketMenuClick(player, currentItem, tournamentManager, title.replaceFirst("Bracket ", ""));
-                return;
-            }
-
-            if (title.equals("Élimination joueurs")) {
-                handleEliminationMenuClick(player, currentItem, tournamentManager);
-                return;
-            }
-        } else {
+            menu.handleClick(event);
+            return;
+        }
+ else {
             if (currentItem.getItemMeta().getDisplayName().contains("Menu Principal")) {
                 event.setCancelled(true);
             }

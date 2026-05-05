@@ -57,7 +57,9 @@ public class DiscordBot extends ListenerAdapter {
                                 .addOption(OptionType.STRING, "pseudo", "Pseudo Minecraft du joueur", true)
                                 .addOption(OptionType.STRING, "rank", "Le nouveau grade", true, true),
                         Commands.slash("setlogchannel", "Définir le salon de logs des parties")
-                                .addOption(OptionType.CHANNEL, "salon", "Le salon textuel pour les logs", true)
+                                .addOption(OptionType.CHANNEL, "salon", "Le salon textuel pour les logs", true),
+                        Commands.slash("acceptstaff", "Accepter une sanction staff")
+                                .addOption(OptionType.STRING, "id", "L'ID de la sanction", true)
                 ).queue();
             }
 
@@ -85,7 +87,39 @@ public class DiscordBot extends ListenerAdapter {
             handleSetRank(event, pseudo, rankName);
         } else if (event.getName().equals("setlogchannel")) {
             handleSetLogChannel(event);
+        } else if (event.getName().equals("acceptstaff")) {
+            handleAcceptStaff(event);
         }
+    }
+
+    private void handleAcceptStaff(SlashCommandInteractionEvent event) {
+        String id = event.getOption("id").getAsString();
+        if (plugin.getStaffManager().acceptSanction(id)) {
+            event.reply("La sanction **" + id + "** a été acceptée et appliquée.").queue();
+        } else {
+            event.reply("ID de sanction invalide ou déjà traitée.").setEphemeral(true).queue();
+        }
+    }
+
+    public void sendStaffSanctionRequest(fr.rammex.chasetag.lobby.staff.Sanction sanction) {
+        String channelId = plugin.getConfig().getString("discord.staff-validation-channel-id");
+        if (channelId == null || channelId.isEmpty()) return;
+
+        TextChannel channel = jda.getTextChannelById(channelId);
+        if (channel == null) return;
+
+        EmbedBuilder embed = new EmbedBuilder();
+        embed.setTitle("⚖️ Demande de Sanction Staff");
+        embed.setColor(sanction.getType() == fr.rammex.chasetag.lobby.staff.Sanction.Type.BAN ? Color.RED : Color.ORANGE);
+        embed.addField("Type", sanction.getType().name(), true);
+        embed.addField("Cible", sanction.getTargetName(), true);
+        embed.addField("Raison", sanction.getReason(), false);
+        embed.addField("Staff", sanction.getStaffName(), true);
+        embed.addField("ID de Validation", "`" + sanction.getId() + "`", true);
+        embed.setFooter("Utilisez /acceptstaff " + sanction.getId() + " pour valider");
+        embed.setTimestamp(java.time.Instant.now());
+
+        channel.sendMessageEmbeds(embed.build()).queue();
     }
 
     private void handleSetLogChannel(SlashCommandInteractionEvent event) {
@@ -119,8 +153,9 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     private void handleWhitelist(SlashCommandInteractionEvent event, String action, String pseudo) {
+        boolean whitelisted = action.equalsIgnoreCase("add");
+        
         plugin.getPlayerMongoRepository().getPlayerByName(pseudo).ifPresentOrElse(player -> {
-            boolean whitelisted = action.equalsIgnoreCase("add");
             player.setPlayerData("whitelisted", whitelisted);
             plugin.getPlayerMongoRepository().savePlayer(player);
             
@@ -130,14 +165,53 @@ public class DiscordBot extends ListenerAdapter {
 
             event.reply("Le joueur **" + pseudo + "** a été " + (whitelisted ? "ajouté à" : "retiré de") + " la whitelist.").queue();
         }, () -> {
-            if (action.equalsIgnoreCase("add")) {
-                // Créer un profil temporaire ou demander au joueur de se connecter une fois ?
-                // Idéalement, on a besoin de l'UUID. On va essayer de le fetch via Mojang si possible ou informer qu'il doit s'être connecté.
-                event.reply("Joueur non trouvé dans la base de données. Il doit s'être connecté au moins une fois.").setEphemeral(true).queue();
+            if (whitelisted) {
+                // Tenter de récupérer l'UUID via Mojang pour un nouveau joueur
+                event.deferReply().queue();
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    try {
+                        String uuid = fetchUUID(pseudo);
+                        if (uuid != null) {
+                            Player newPlayer = new Player(uuid, pseudo, Rank.Joueur);
+                            newPlayer.setPlayerData("whitelisted", true);
+                            plugin.getPlayerMongoRepository().savePlayer(newPlayer);
+                            event.getHook().sendMessage("Le nouveau joueur **" + pseudo + "** a été ajouté à la whitelist (Profil créé).").queue();
+                        } else {
+                            event.getHook().sendMessage("Impossible de trouver le joueur **" + pseudo + "** sur les serveurs de Mojang.").queue();
+                        }
+                    } catch (Exception e) {
+                        event.getHook().sendMessage("Erreur lors de la récupération de l'UUID : " + e.getMessage()).queue();
+                    }
+                });
             } else {
-                event.reply("Joueur non trouvé.").setEphemeral(true).queue();
+                event.reply("Joueur non trouvé dans la base de données.").setEphemeral(true).queue();
             }
         });
+    }
+
+    private String fetchUUID(String playerName) throws Exception {
+        java.net.URL url = new java.net.URL("https://api.mojang.com/users/profiles/minecraft/" + playerName);
+        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        
+        if (connection.getResponseCode() == 200) {
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+            
+            // Format simple car on ne veut que l'id: {"name":"PlayerName","id":"uuid"}
+            String json = response.toString();
+            int idIndex = json.indexOf("\"id\":\"") + 6;
+            String id = json.substring(idIndex, json.indexOf("\"", idIndex));
+            
+            // Mojang renvoie l'UUID sans tirets, on doit les ajouter pour Bukkit
+            return id.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5");
+        }
+        return null;
     }
 
     private void handleSetRank(SlashCommandInteractionEvent event, String pseudo, String rankName) {

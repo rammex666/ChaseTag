@@ -32,11 +32,17 @@ public final class ChaseTagLobby extends JavaPlugin {
     private DuelRequestManager duelRequestManager;
     private LobbyRedisListener redisListener;
     private DiscordBot discordBot;
+    private fr.rammex.chasetag.lobby.staff.StaffManager staffManager;
+    private fr.rammex.chasetag.lobby.staff.StaffModeManager staffModeManager;
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+
+        // Staff Manager
+        this.staffManager = new fr.rammex.chasetag.lobby.staff.StaffManager(this);
+        this.staffModeManager = new fr.rammex.chasetag.lobby.staff.StaffModeManager(this);
 
         // MongoDB
         this.mongoManager = new MongoManager(
@@ -100,6 +106,8 @@ public final class ChaseTagLobby extends JavaPlugin {
         // Commandes
         getCommand("chasetag").setExecutor(new PlayCommand(this));
         getCommand("duel").setExecutor(new DuelCommand(this, duelRequestManager));
+        getCommand("mute").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("ban").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
 
         // Listeners
         Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);
@@ -129,4 +137,6 @@ public final class ChaseTagLobby extends JavaPlugin {
     public TournamentManager getTournamentManager() { return tournamentManager; }
     public DuelRequestManager getDuelRequestManager() { return duelRequestManager; }
     public DiscordBot getDiscordBot() { return discordBot; }
+    public fr.rammex.chasetag.lobby.staff.StaffManager getStaffManager() { return staffManager; }
+    public fr.rammex.chasetag.lobby.staff.StaffModeManager getStaffModeManager() { return staffModeManager; }
 }

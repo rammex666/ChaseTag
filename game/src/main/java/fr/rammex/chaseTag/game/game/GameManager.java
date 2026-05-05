@@ -76,6 +76,13 @@ public class GameManager {
             shears.setItemMeta(meta);
         }
 
+        ItemStack cobweb = new ItemStack(Material.COBWEB, 1);
+        ItemMeta cobwebMeta = cobweb.getItemMeta();
+        if (cobwebMeta != null) {
+            cobwebMeta.setDisplayName(ChatColor.WHITE + "Toile de capture");
+            cobweb.setItemMeta(cobwebMeta);
+        }
+
         // Téléporter et équiper les joueurs
         if (chaser != null && chaser.getBukkitPlayer() != null) {
             org.bukkit.entity.Player chaserBukkit = chaser.getBukkitPlayer();
@@ -86,9 +93,10 @@ public class GameManager {
             chaserBukkit.getInventory().addItem(new ItemStack(Material.RED_WOOL,  20));
             chaserBukkit.getInventory().addItem(shears);
             chaserBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
+            chaserBukkit.getInventory().addItem(cobweb);
             chaserBukkit.sendMessage(ChatColor.RED + "Vous êtes le CHASSEUR ! Taguez le chassé !");
             chaserBukkit.sendTitle(ChatColor.RED + "CHASSEUR", ChatColor.YELLOW + "Taguez le chassé !", 0, 40, 0);
-            
+
             org.bukkit.attribute.AttributeInstance reach = chaserBukkit.getAttribute(org.bukkit.attribute.Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
             if (reach != null) reach.setBaseValue(2.0);
         }
@@ -101,12 +109,14 @@ public class GameManager {
             runnerBukkit.getInventory().addItem(new ItemStack(Material.BLUE_WOOL, 20));
             runnerBukkit.getInventory().addItem(shears);
             runnerBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
+            runnerBukkit.getInventory().addItem(cobweb);
             runnerBukkit.sendMessage(ChatColor.BLUE + "Vous êtes le CHASSÉ ! Fuyez !");
             runnerBukkit.sendTitle(ChatColor.BLUE + "CHASSÉ", ChatColor.YELLOW + "Fuyez !", 0, 40, 0);
-            
+
             org.bukkit.attribute.AttributeInstance reach = runnerBukkit.getAttribute(org.bukkit.attribute.Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
             if (reach != null) reach.setBaseValue(2.0);
-        } else if (game.isTestDev() && runner == null) {
+        }
+ else if (game.isTestDev() && runner == null) {
                 if (testPig != null) testPig.remove();
                 testPig = blueSpawn.getWorld().spawnEntity(blueSpawn, EntityType.PIG);
                 Pig pig = (Pig) testPig;

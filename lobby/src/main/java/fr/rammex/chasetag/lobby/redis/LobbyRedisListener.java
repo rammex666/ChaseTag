@@ -76,6 +76,19 @@ public class LobbyRedisListener {
                 .ifPresent(session -> {
                     session.setStatus(GameSession.Status.PLAYING);
                     sendPlayersToServer(session, msg.getServerId());
+
+                    // Envoyer le log sur Discord
+                    if (plugin.getDiscordBot() != null) {
+                        String p1 = "Inconnu";
+                        String p2 = "Inconnu";
+                        if (session.getPlayers().size() >= 1) {
+                            p1 = Bukkit.getOfflinePlayer(session.getPlayers().get(0)).getName();
+                        }
+                        if (session.getPlayers().size() >= 2) {
+                            p2 = Bukkit.getOfflinePlayer(session.getPlayers().get(1)).getName();
+                        }
+                        plugin.getDiscordBot().sendGameStartLog(p1, p2, session.getMapName());
+                    }
                 });
         });
     }

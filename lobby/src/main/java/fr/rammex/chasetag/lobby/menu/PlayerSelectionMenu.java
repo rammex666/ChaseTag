@@ -71,6 +71,7 @@ public class PlayerSelectionMenu extends Menu {
         inventory.setItem(45, back);
     }
 
+    @Override
     public void handleClick(InventoryClickEvent event) {
         event.setCancelled(true);
         ItemStack item = event.getCurrentItem();

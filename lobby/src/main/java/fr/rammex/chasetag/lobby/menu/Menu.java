@@ -14,6 +14,8 @@ public abstract class Menu implements InventoryHolder {
 
     public abstract void open();
 
+    public void handleClick(org.bukkit.event.inventory.InventoryClickEvent event) {}
+
     @Override
     public Inventory getInventory() {
         return inventory;
