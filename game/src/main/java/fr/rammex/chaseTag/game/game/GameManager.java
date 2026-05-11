@@ -93,7 +93,6 @@ public class GameManager {
             chaserBukkit.getInventory().addItem(new ItemStack(Material.RED_WOOL,  20));
             chaserBukkit.getInventory().addItem(shears);
             chaserBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
-            chaserBukkit.getInventory().addItem(cobweb);
             chaserBukkit.sendMessage(ChatColor.RED + "Vous êtes le CHASSEUR ! Taguez le chassé !");
             chaserBukkit.sendTitle(ChatColor.RED + "CHASSEUR", ChatColor.YELLOW + "Taguez le chassé !", 0, 40, 0);
 

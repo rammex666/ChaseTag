@@ -177,7 +177,12 @@ public class DiscordBot extends ListenerAdapter {
                             plugin.getPlayerMongoRepository().savePlayer(newPlayer);
                             event.getHook().sendMessage("Le nouveau joueur **" + pseudo + "** a été ajouté à la whitelist (Profil créé).").queue();
                         } else {
-                            event.getHook().sendMessage("Impossible de trouver le joueur **" + pseudo + "** sur les serveurs de Mojang.").queue();
+                            // On ajoute quand même à la whitelist avec un UUID temporaire
+                            String tempUuid = "UNKNOWN-" + pseudo;
+                            Player newPlayer = new Player(tempUuid, pseudo, Rank.Joueur);
+                            newPlayer.setPlayerData("whitelisted", true);
+                            plugin.getPlayerMongoRepository().savePlayer(newPlayer);
+                            event.getHook().sendMessage("Le joueur **" + pseudo + "** a été ajouté à la whitelist (UUID non trouvé, il sera synchronisé à sa connexion).").queue();
                         }
                     } catch (Exception e) {
                         event.getHook().sendMessage("Erreur lors de la récupération de l'UUID : " + e.getMessage()).queue();

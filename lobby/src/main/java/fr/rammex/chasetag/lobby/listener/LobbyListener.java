@@ -37,6 +37,9 @@ public class LobbyListener implements Listener {
         giveLobbyItems(player);
         player.setFoodLevel(20);
         player.setHealth(20);
+
+        // Cacher le staff déjà présent pour le nouveau joueur
+        plugin.getStaffModeManager().hideStaffFrom(player);
     }
 
     @EventHandler
@@ -120,6 +123,7 @@ public class LobbyListener implements Listener {
             ItemStack item = staff.getInventory().getItemInMainHand();
             if (item.getType() == Material.ICE && item.hasItemMeta() && item.getItemMeta().getDisplayName().contains("Geler")) {
                 plugin.getStaffModeManager().toggleFreeze(staff, target);
+                event.setCancelled(true);
             }
         }
     }
@@ -131,6 +135,7 @@ public class LobbyListener implements Listener {
 
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (isCompass(item)) {
+                event.setCancelled(true);
                 if (event.getAction().name().contains("RIGHT")) {
                     if (plugin.getStaffModeManager().isStaffMode(player.getUniqueId())) {
                         new StaffTeleportMenu(player).open();
@@ -171,7 +176,9 @@ public class LobbyListener implements Listener {
     private boolean isCompass(ItemStack item) {
         if (item == null || item.getType() != Material.COMPASS) return false;
         ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.getDisplayName().contains("Menu Principal");
+        if (meta == null) return false;
+        String name = meta.getDisplayName();
+        return name.contains("Menu Principal") || name.contains("Téléportation aux parties");
     }
 
     private boolean isReadyItem(ItemStack item) {

@@ -60,16 +60,22 @@ public class PlayerLobbyEvents implements Listener {
     @EventHandler
     public void onPlayerJoinFirstTime(PlayerJoinEvent event){
         org.bukkit.entity.Player player = event.getPlayer();
+        String playerUUID = player.getUniqueId().toString();
+        String playerName = player.getName();
 
         // Whitelist check
         if (ChaseTagLobby.getInstance().getConfig().getBoolean("discord.whitelist-enabled", false)) {
-            Player p = PlayerManager.getPlayer(player.getUniqueId().toString());
+            Player p = PlayerManager.getPlayer(playerUUID);
             if (p == null) {
-                // Check in DB if not in memory
-                p = playerMongoRepository.getPlayerByUUID(player.getUniqueId().toString()).orElse(null);
+                p = playerMongoRepository.getPlayerByUUID(playerUUID).orElse(null);
+            }
+            
+            if (p == null) {
+                // Check by name if not found by UUID
+                p = playerMongoRepository.getPlayerByName(playerName).orElse(null);
             }
 
-            if (p == null || !((Boolean) p.getPlayerData().getOrDefault("whitelisted", false))) {
+            if (p == null || !Boolean.TRUE.equals(p.getPlayerData().get("whitelisted"))) {
                 player.kick(Component.text("§cVous n'êtes pas sur la whitelist.\n§7Rejoignez notre Discord pour vous faire whitelist !"));
                 return;
             }
@@ -77,13 +83,31 @@ public class PlayerLobbyEvents implements Listener {
         
         // Priorité au chargement depuis MongoDB pour avoir les stats fraîches
         Player stored = playerMongoRepository != null ? 
-            playerMongoRepository.getPlayerByUUID(player.getUniqueId().toString()).orElse(null) : null;
+            playerMongoRepository.getPlayerByUUID(playerUUID).orElse(null) : null;
+
+        if (stored == null && playerMongoRepository != null) {
+            // Fallback lookup by name (for whitelisted players without UUID yet)
+            stored = playerMongoRepository.getPlayerByName(playerName).orElse(null);
+            if (stored != null) {
+                // If it's a placeholder or different UUID, we migrate it
+                if (!stored.getPlayerUUID().equals(playerUUID)) {
+                    Player updated = new Player(playerUUID, playerName, stored.getPlayerRole());
+                    updated.setPlayerData(stored.getPlayerData());
+                    // Delete old entry if it was a placeholder
+                    if (stored.getPlayerUUID().startsWith("UNKNOWN-")) {
+                        playerMongoRepository.deletePlayerByUUID(stored.getPlayerUUID());
+                    }
+                    stored = updated;
+                    playerMongoRepository.savePlayer(stored);
+                }
+            }
+        }
 
         if (stored == null) {
             // Fallback sur le cache local ou nouveau joueur
-            stored = PlayerManager.getPlayer(player.getUniqueId().toString());
+            stored = PlayerManager.getPlayer(playerUUID);
             if (stored == null) {
-                stored = new Player(player.getUniqueId().toString(), player.getName(), Rank.Joueur);
+                stored = new Player(playerUUID, playerName, Rank.Joueur);
             }
         }
 

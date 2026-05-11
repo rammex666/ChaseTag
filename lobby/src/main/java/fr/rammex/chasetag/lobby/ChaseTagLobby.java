@@ -108,6 +108,10 @@ public final class ChaseTagLobby extends JavaPlugin {
         getCommand("duel").setExecutor(new DuelCommand(this, duelRequestManager));
         getCommand("mute").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
         getCommand("ban").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("unmute").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("unban").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("staff").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("freeze").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
 
         // Listeners
         Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);

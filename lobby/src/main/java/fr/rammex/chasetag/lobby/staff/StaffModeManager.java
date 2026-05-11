@@ -39,9 +39,19 @@ public class StaffModeManager {
         inventoryBackups.put(player.getUniqueId(), player.getInventory().getContents());
         player.getInventory().clear();
         
-        player.setGameMode(GameMode.SPECTATOR);
-        giveStaffItems(player);
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.setCollidable(false);
         
+        // Cacher le staff des autres joueurs
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (!online.getUniqueId().equals(player.getUniqueId()) && !online.hasPermission("chasetag.staff")) {
+                online.hidePlayer(plugin, player);
+            }
+        }
+
+        giveStaffItems(player);
         player.sendMessage(ChatColor.GREEN + "Mode Staff activé !");
     }
 
@@ -54,7 +64,25 @@ public class StaffModeManager {
         }
         
         player.setGameMode(GameMode.SURVIVAL);
+        player.setAllowFlight(false);
+        player.setFlying(false);
+        player.setCollidable(true);
+
+        // Réafficher le staff pour tout le monde
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            online.showPlayer(plugin, player);
+        }
+        
         player.sendMessage(ChatColor.RED + "Mode Staff désactivé !");
+    }
+
+    public void hideStaffFrom(Player player) {
+        for (UUID staffUuid : staffModePlayers) {
+            Player staff = Bukkit.getPlayer(staffUuid);
+            if (staff != null) {
+                player.hidePlayer(plugin, staff);
+            }
+        }
     }
 
     private void giveStaffItems(Player player) {
