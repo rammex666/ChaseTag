@@ -102,7 +102,7 @@ public class LobbyListener implements Listener {
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
-        if (isCompass(item) || isReadyItem(item)) {
+        if (isMenuLauncher(item) || isReadyItem(item)) {
             event.setCancelled(true);
         }
     }
@@ -134,7 +134,7 @@ public class LobbyListener implements Listener {
         ItemStack item = event.getItem();
 
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-            if (isCompass(item)) {
+            if (isMenuLauncher(item)) {
                 event.setCancelled(true);
                 if (event.getAction().name().contains("RIGHT")) {
                     if (plugin.getStaffModeManager().isStaffMode(player.getUniqueId())) {
@@ -173,8 +173,9 @@ public class LobbyListener implements Listener {
         }
     }
 
-    private boolean isCompass(ItemStack item) {
-        if (item == null || item.getType() != Material.COMPASS) return false;
+    private boolean isMenuLauncher(ItemStack item) {
+        if (item == null) return false;
+        if (item.getType() != Material.COMPASS && item.getType() != Material.NETHER_STAR) return false;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return false;
         String name = meta.getDisplayName();

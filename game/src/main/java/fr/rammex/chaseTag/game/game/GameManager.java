@@ -115,7 +115,7 @@ public class GameManager {
             org.bukkit.attribute.AttributeInstance reach = runnerBukkit.getAttribute(org.bukkit.attribute.Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
             if (reach != null) reach.setBaseValue(2.0);
         }
- else if (game.isTestDev() && runner == null) {
+        else if (game.isTestDev() && runner == null) {
                 if (testPig != null) testPig.remove();
                 testPig = blueSpawn.getWorld().spawnEntity(blueSpawn, EntityType.PIG);
                 Pig pig = (Pig) testPig;

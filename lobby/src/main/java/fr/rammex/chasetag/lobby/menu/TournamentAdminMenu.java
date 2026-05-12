@@ -146,6 +146,70 @@ public class TournamentAdminMenu extends Menu {
         inventory.setItem(53, back);
     }
 
+    @Override
+    public void handleClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        ItemStack item = event.getCurrentItem();
+        if (item == null || item.getItemMeta() == null) return;
+
+        String displayName = item.getItemMeta().getDisplayName();
+
+        if (displayName.startsWith(ChatColor.GOLD + "Poule ")) {
+            int poule = getPouleFromItem(item);
+            if (poule > 0) {
+                new PouleMenu(player, tournamentManager, poule).open();
+            }
+            return;
+        }
+
+        if (displayName.startsWith(ChatColor.YELLOW + "Mode: ")) {
+            boolean practiceMode = tournamentManager.toggleMode();
+            player.sendMessage(practiceMode
+                    ? ChatColor.GREEN + "Mode Duel / Pratique activé. Les joueurs peuvent maintenant s'envoyer des demandes de duel."
+                    : ChatColor.GREEN + "Mode Tournoi activé. Les demandes de duel sont désactivées.");
+            open(); // Refresh
+            return;
+        }
+
+        if (displayName.startsWith(ChatColor.GOLD + "Match ") || displayName.equals(ChatColor.AQUA + "Gérer le bracket")) {
+            new BracketMenu(player, tournamentManager, tournamentManager.getCurrentPhase()).open();
+            return;
+        }
+
+        if (displayName.equals(ChatColor.GREEN + "Passer à la phase suivante")) {
+            tournamentManager.nextPhase();
+            open(); // Refresh
+            return;
+        }
+
+        if (displayName.equals(ChatColor.RED + "Réinitialiser la phase")) {
+            tournamentManager.setPhase("Phase 1");
+            open(); // Refresh
+            return;
+        }
+
+        if (displayName.equals(ChatColor.RED + "Gérer l'élimination")) {
+            new EliminationMenu(player, tournamentManager).open();
+            return;
+        }
+
+        if (displayName.equals(ChatColor.DARK_RED + "Joueurs éliminés")) {
+            new EliminationMenu(player, tournamentManager).open();
+            return;
+        }
+
+        if (displayName.contains("Lancement des matchs")) {
+            boolean started = !tournamentManager.isMatchesStarted();
+            tournamentManager.setMatchesStarted(started);
+            player.sendMessage(started ? ChatColor.GREEN + "Lancement des matchs autorisé !" : ChatColor.RED + "Lancement des matchs bloqué.");
+            open(); // Refresh
+            return;
+        }
+
+        if (displayName.equals(ChatColor.YELLOW + "Retour")) {
+            new LobbyMenu(player).open();
+        }
+    }
+
     public int getPouleFromItem(ItemStack item) {
         if (item == null || item.getItemMeta() == null) {
             return 0;
@@ -159,5 +223,9 @@ public class TournamentAdminMenu extends Menu {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    public TournamentManager getTournamentManager() {
+        return tournamentManager;
     }
 }

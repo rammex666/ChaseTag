@@ -11,6 +11,8 @@ import fr.rammex.chaseTag.game.game.ScoreboardManager;
 import fr.rammex.chaseTag.game.player.PlayerManager;
 import fr.rammex.chaseTag.game.player.events.PlayerListener;
 import fr.rammex.chaseTag.game.player.events.PlayerMovementListener;
+import fr.rammex.chaseTag.game.staff.StaffManager;
+import fr.rammex.chaseTag.game.listener.GameListener;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,6 +24,9 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.List;
 
+import fr.rammex.chaseTag.game.database.MongoManager;
+import fr.rammex.chaseTag.game.player.PlayerMongoRepository;
+
 public final class ChaseTag extends JavaPlugin {
     private static ChaseTag instance;
     private PlayerManager playerManager;
@@ -32,6 +37,9 @@ public final class ChaseTag extends JavaPlugin {
     private TimerManager timerManager;
     private GameManager gameManager;
     private ScoreboardManager scoreboardManager;
+    private StaffManager staffManager;
+    private PlayerMongoRepository playerMongoRepository;
+    private MongoManager mongoManager;
 
 
     private String serverId;
@@ -43,6 +51,12 @@ public final class ChaseTag extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+
+        // MongoDB initialization
+        String mongoUri = getConfig().getString("mongodb.uri", "mongodb://localhost:27017");
+        String mongoDatabase = getConfig().getString("mongodb.database", "chasetag");
+        this.mongoManager = new MongoManager(mongoUri, mongoDatabase);
+        this.playerMongoRepository = new PlayerMongoRepository(mongoManager);
 
         String envServerId = System.getenv("GAME_ID");
         this.serverId = envServerId != null && !envServerId.isBlank()
@@ -103,6 +117,7 @@ public final class ChaseTag extends JavaPlugin {
         this.timerManager = new TimerManager();
         this.gameManager = new GameManager(this);
         this.scoreboardManager = new ScoreboardManager(this);
+        this.staffManager = new StaffManager(this);
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, 
     () -> timerManager.update(), 0, 1);
@@ -125,6 +140,7 @@ public final class ChaseTag extends JavaPlugin {
         getCommand("setstaff").setExecutor(roleCommand);
 
         loadEvents();
+        this.getServer().getPluginManager().registerEvents(new GameListener(this), this);
 
     }
 
@@ -134,6 +150,9 @@ public final class ChaseTag extends JavaPlugin {
         ArenaManager.save();
         if (jedisPool != null) {
             jedisPool.close();
+        }
+        if (mongoManager != null) {
+            mongoManager.close();
         }
     }
 
@@ -167,6 +186,14 @@ public final class ChaseTag extends JavaPlugin {
 
     public ScoreboardManager getScoreboardManager() {
         return scoreboardManager;
+    }
+
+    public StaffManager getStaffManager() {
+        return staffManager;
+    }
+
+    public PlayerMongoRepository getPlayerMongoRepository() {
+        return playerMongoRepository;
     }
 
     public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores) {

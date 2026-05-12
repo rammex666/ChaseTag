@@ -56,17 +56,19 @@ public class PlayerListener implements Listener {
             player1 = PlayerManager.getPlayer(player.getUniqueId().toString());
         }
 
-            if (player.hasPermission("chasetag.staff")) {
-                player.sendMessage("§b[Staff] §fVous avez rejoint en tant que membre du staff.");
-                player.setGameMode(GameMode.SPECTATOR);
-                Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
-                if (currentGame != null) {
+        if (player.hasPermission("chasetag.staff")) {
+            player.sendMessage("§b[Staff] §fVous avez rejoint en tant que membre du staff.");
+            player.setGameMode(GameMode.SPECTATOR);
+            Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
+            if (currentGame != null) {
+                if (!currentGame.getSpectators().contains(player1)) {
                     currentGame.getSpectators().add(player1);
-                    player.teleport(currentGame.getArena().getSpecSpawn());
-                    SpectatorManager.giveSpectatorItems(player);
                 }
-                return;
+                player.teleport(currentGame.getArena().getSpecSpawn());
+                SpectatorManager.giveSpectatorItems(player);
             }
+            return;
+        }
 
         Game currentGame = ChaseTag.getInstance().getGameManager().getGame();
         

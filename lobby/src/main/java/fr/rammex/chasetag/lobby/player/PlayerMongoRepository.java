@@ -62,6 +62,14 @@ public class PlayerMongoRepository {
         collection.deleteOne(Filters.eq("uuid", uuid));
     }
 
+    public java.util.List<Player> getAllPlayers() {
+        java.util.List<Player> players = new java.util.ArrayList<>();
+        for (Document document : collection.find()) {
+            players.add(toPlayer(document));
+        }
+        return players;
+    }
+
     private Player toPlayer(Document document) {
         if (document == null) {
             return null;

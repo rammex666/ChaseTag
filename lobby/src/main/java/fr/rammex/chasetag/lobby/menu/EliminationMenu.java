@@ -52,4 +52,31 @@ public class EliminationMenu extends Menu {
         ItemStack back = MenuUtils.createBackButton(ChatColor.YELLOW + "Retour", ChatColor.GRAY + "Retour au menu administrateur");
         inventory.setItem(53, back);
     }
+
+    @Override
+    public void handleClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        ItemStack item = event.getCurrentItem();
+        if (item == null || item.getItemMeta() == null) return;
+
+        String displayName = item.getItemMeta().getDisplayName();
+        if (displayName.equals(ChatColor.YELLOW + "Retour")) {
+            new TournamentAdminMenu(player, tournamentManager).open();
+            return;
+        }
+
+        String playerName = ChatColor.stripColor(displayName);
+        // On vérifie en ligne ou en base
+        if (Bukkit.getPlayerExact(playerName) != null || fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getPlayerByName(playerName).isPresent()) {
+            boolean eliminated = tournamentManager.isPlayerEliminated(playerName);
+            tournamentManager.setPlayerEliminated(playerName, !eliminated);
+            player.sendMessage(eliminated
+                    ? ChatColor.GREEN + "Joueur " + playerName + " restauré."
+                    : ChatColor.RED + "Joueur " + playerName + " éliminé.");
+            open(); // Refresh
+        }
+    }
+
+    public TournamentManager getTournamentManager() {
+        return tournamentManager;
+    }
 }

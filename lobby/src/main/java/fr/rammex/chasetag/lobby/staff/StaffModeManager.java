@@ -52,6 +52,7 @@ public class StaffModeManager {
         }
 
         giveStaffItems(player);
+        updateStaffModeInDb(player, true);
         player.sendMessage(ChatColor.GREEN + "Mode Staff activé !");
     }
 
@@ -73,7 +74,16 @@ public class StaffModeManager {
             online.showPlayer(plugin, player);
         }
         
+        updateStaffModeInDb(player, false);
         player.sendMessage(ChatColor.RED + "Mode Staff désactivé !");
+    }
+
+    private void updateStaffModeInDb(Player player, boolean enabled) {
+        fr.rammex.chasetag.lobby.player.Player ctPlayer = fr.rammex.chasetag.lobby.player.PlayerManager.getPlayer(player.getUniqueId().toString());
+        if (ctPlayer != null) {
+            ctPlayer.setPlayerData("staff_mode", enabled);
+            plugin.getPlayerMongoRepository().savePlayer(ctPlayer);
+        }
     }
 
     public void hideStaffFrom(Player player) {
@@ -86,11 +96,11 @@ public class StaffModeManager {
     }
 
     private void giveStaffItems(Player player) {
-        ItemStack compass = new ItemStack(Material.COMPASS);
-        ItemMeta compassMeta = compass.getItemMeta();
-        if (compassMeta != null) {
-            compassMeta.setDisplayName(ChatColor.AQUA + "Téléportation aux parties " + ChatColor.GRAY + "(Clic Droit)");
-            compass.setItemMeta(compassMeta);
+        ItemStack star = new ItemStack(Material.NETHER_STAR);
+        ItemMeta starMeta = star.getItemMeta();
+        if (starMeta != null) {
+            starMeta.setDisplayName(ChatColor.AQUA + "Téléportation aux parties " + ChatColor.GRAY + "(Clic Droit)");
+            star.setItemMeta(starMeta);
         }
         
         ItemStack ice = new ItemStack(Material.ICE);
@@ -100,7 +110,7 @@ public class StaffModeManager {
             ice.setItemMeta(iceMeta);
         }
 
-        player.getInventory().setItem(0, compass);
+        player.getInventory().setItem(0, star);
         player.getInventory().setItem(1, ice);
     }
 
