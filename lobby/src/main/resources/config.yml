@@ -40,16 +40,18 @@ tournament:
       type: "poule"
       pouleCount: 8
       playersPerPoule: 4
-    - name: "Phase 4"
-      type: "poule"
-      pouleCount: 8
-      playersPerPoule: 4
     - name: "8ème de finale"
       type: "bracket"
       bracketSize: 16
+    - name: "Quart de finale"
+      type: "bracket"
+      bracketSize: 8
     - name: "Demi-finale"
       type: "bracket"
       bracketSize: 4
+    - name: "Petite Finale"
+      type: "bracket"
+      bracketSize: 2
     - name: "Final"
       type: "bracket"
       bracketSize: 2

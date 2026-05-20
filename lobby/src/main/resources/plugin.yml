@@ -26,3 +26,5 @@ commands:
     description: Active le mode staff (Spectateur + outils)
   freeze:
     description: Gèle un joueur
+  podium:
+    description: Commandes de configuration du podium

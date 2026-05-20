@@ -54,4 +54,8 @@ public class ColorUtils {
     public static Component colorize(String text) {
         return miniMessage.deserialize(text);
     }
+
+    public static String format(String text) {
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', text);
+    }
 }

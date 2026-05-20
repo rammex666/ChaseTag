@@ -15,6 +15,9 @@ import fr.rammex.chasetag.lobby.placeholder.LobbyPlaceholderExpansion;
 import fr.rammex.chasetag.lobby.pterodactyl.PterodactylClient;
 import fr.rammex.chasetag.lobby.redis.LobbyRedisListener;
 import fr.rammex.chasetag.lobby.tournament.TournamentManager;
+import fr.rammex.chasetag.lobby.podium.PodiumManager;
+import fr.rammex.chasetag.lobby.podium.PodiumCommand;
+import fr.rammex.chasetag.lobby.podium.PodiumListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import redis.clients.jedis.JedisPool;
@@ -34,15 +37,12 @@ public final class ChaseTagLobby extends JavaPlugin {
     private DiscordBot discordBot;
     private fr.rammex.chasetag.lobby.staff.StaffManager staffManager;
     private fr.rammex.chasetag.lobby.staff.StaffModeManager staffModeManager;
+    private PodiumManager podiumManager;
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
-
-        // Staff Manager
-        this.staffManager = new fr.rammex.chasetag.lobby.staff.StaffManager(this);
-        this.staffModeManager = new fr.rammex.chasetag.lobby.staff.StaffModeManager(this);
 
         // MongoDB
         this.mongoManager = new MongoManager(
@@ -84,10 +84,13 @@ public final class ChaseTagLobby extends JavaPlugin {
         // GameManager
         this.gameManager = new GameManager(this);
 
-        // Tournament manager
-        this.tournamentManager = new TournamentManager(this, this.mongoManager);
+        // Repository and managers
         this.playerMongoRepository = new PlayerMongoRepository(this.mongoManager);
+        this.tournamentManager = new TournamentManager(this, this.mongoManager);
         this.duelRequestManager = new DuelRequestManager();
+        this.staffManager = new fr.rammex.chasetag.lobby.staff.StaffManager(this);
+        this.staffModeManager = new fr.rammex.chasetag.lobby.staff.StaffModeManager(this);
+        this.podiumManager = new PodiumManager(this);
 
         // Discord Bot
         this.discordBot = new DiscordBot(this);
@@ -112,17 +115,23 @@ public final class ChaseTagLobby extends JavaPlugin {
         getCommand("unban").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
         getCommand("staff").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
         getCommand("freeze").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
+        getCommand("podium").setExecutor(new PodiumCommand(this));
 
         // Listeners
         Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);
         Bukkit.getPluginManager().registerEvents(new MenuListener(), this);
         Bukkit.getPluginManager().registerEvents(new PlayerLobbyEvents(this.playerMongoRepository), this);
+        Bukkit.getPluginManager().registerEvents(new PodiumListener(this), this);
+
+        // Refresh podium after load
+        Bukkit.getScheduler().runTaskLater(this, () -> this.podiumManager.refreshPodium(), 20L);
 
         getLogger().info("ChaseTagLobby activé.");
     }
 
     @Override
     public void onDisable() {
+        if (podiumManager != null) podiumManager.clearEntities();
         if (discordBot != null) discordBot.shutdown();
         if (redisListener != null) redisListener.stop();
         if (jedisPool != null) jedisPool.close();
@@ -143,4 +152,5 @@ public final class ChaseTagLobby extends JavaPlugin {
     public DiscordBot getDiscordBot() { return discordBot; }
     public fr.rammex.chasetag.lobby.staff.StaffManager getStaffManager() { return staffManager; }
     public fr.rammex.chasetag.lobby.staff.StaffModeManager getStaffModeManager() { return staffModeManager; }
+    public PodiumManager getPodiumManager() { return podiumManager; }
 }

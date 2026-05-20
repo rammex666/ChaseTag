@@ -38,6 +38,9 @@ public class BracketMenu extends Menu {
 
         List<TournamentMatch> matches = tournamentManager.getMatchesForPhase(phaseName);
         int matchSlot = 10;
+        Integer selectedMatchId = MenuListener.selectedMatch.get(player.getUniqueId());
+        String selectedPhase = MenuListener.selectedMatchPhase.get(player.getUniqueId());
+
         for (TournamentMatch match : matches) {
             String player1Name = match.getPlayer1();
             String player2Name = match.getPlayer2();
@@ -48,13 +51,22 @@ public class BracketMenu extends Menu {
             List<String> matchLore = new ArrayList<>();
             matchLore.add(ChatColor.GRAY + player1 + " vs " + player2);
             matchLore.add(ChatColor.GRAY + "Map: " + (match.hasMap() ? match.getMapName() : "Aucune"));
+            
+            boolean isSelected = selectedMatchId != null && selectedMatchId == match.getMatchId() && phaseName.equals(selectedPhase);
+            
             if (match.hasMap() && match.getPlayer1() != null && match.getPlayer2() != null) {
                 matchLore.add(ChatColor.GREEN + "Prêt à démarrer");
             } else {
                 matchLore.add(ChatColor.GRAY + "Clic pour reconfigurer");
             }
+            
+            if (isSelected) {
+                matchLore.add("");
+                matchLore.add(ChatColor.YELLOW + ">>> MATCH SÉLECTIONNÉ <<<");
+            }
+
             ItemStack matchItem = MenuUtils.createMenuItem(
-                    Material.YELLOW_CONCRETE,
+                    isSelected ? Material.LIME_CONCRETE : Material.YELLOW_CONCRETE,
                     ChatColor.GOLD + "Match " + match.getMatchId(),
                     matchLore
             );

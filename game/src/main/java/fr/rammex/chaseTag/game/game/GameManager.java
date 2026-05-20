@@ -76,13 +76,6 @@ public class GameManager {
             shears.setItemMeta(meta);
         }
 
-        ItemStack cobweb = new ItemStack(Material.COBWEB, 1);
-        ItemMeta cobwebMeta = cobweb.getItemMeta();
-        if (cobwebMeta != null) {
-            cobwebMeta.setDisplayName(ChatColor.WHITE + "Toile de capture");
-            cobweb.setItemMeta(cobwebMeta);
-        }
-
         // Téléporter et équiper les joueurs
         if (chaser != null && chaser.getBukkitPlayer() != null) {
             org.bukkit.entity.Player chaserBukkit = chaser.getBukkitPlayer();
@@ -108,7 +101,6 @@ public class GameManager {
             runnerBukkit.getInventory().addItem(new ItemStack(Material.BLUE_WOOL, 20));
             runnerBukkit.getInventory().addItem(shears);
             runnerBukkit.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
-            runnerBukkit.getInventory().addItem(cobweb);
             runnerBukkit.sendMessage(ChatColor.BLUE + "Vous êtes le CHASSÉ ! Fuyez !");
             runnerBukkit.sendTitle(ChatColor.BLUE + "CHASSÉ", ChatColor.YELLOW + "Fuyez !", 0, 40, 0);
 

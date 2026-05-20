@@ -70,6 +70,14 @@ public class PlayerMongoRepository {
         return players;
     }
 
+    public java.util.List<Player> getTopPlayers(String field, int limit) {
+        java.util.List<Player> players = new java.util.ArrayList<>();
+        for (Document document : collection.find().sort(new Document("data." + field, -1)).limit(limit)) {
+            players.add(toPlayer(document));
+        }
+        return players;
+    }
+
     private Player toPlayer(Document document) {
         if (document == null) {
             return null;

@@ -20,7 +20,7 @@ public class PouleMenu extends Menu {
         super(player);
         this.tournamentManager = tournamentManager;
         this.poule = poule;
-        this.inventory = Bukkit.createInventory(this, 54, "Poule " + poule);
+        this.inventory = Bukkit.createInventory(this, 54, "Poule " + tournamentManager.getPoolLetter(poule));
     }
 
     @Override
@@ -46,7 +46,7 @@ public class PouleMenu extends Menu {
             org.bukkit.entity.Player onlinePlayer = Bukkit.getPlayerExact(playerName);
             boolean eliminated = tournamentManager.isPlayerEliminated(playerName);
             List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Poule: " + poule);
+            lore.add(ChatColor.GRAY + "Poule: " + tournamentManager.getPoolLetter(poule));
             lore.add(ChatColor.GRAY + "Éliminé: " + (eliminated ? "Oui" : "Non"));
             lore.add(ChatColor.GRAY + "Clic pour sélectionner ce joueur");
             ItemStack head = onlinePlayer != null
@@ -96,7 +96,7 @@ public class PouleMenu extends Menu {
             
             org.bukkit.entity.Player onlinePlayer = Bukkit.getPlayerExact(playerName);
             List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Clic pour assigner à la poule " + poule);
+            lore.add(ChatColor.GRAY + "Clic pour assigner à la poule " + tournamentManager.getPoolLetter(poule));
             lore.add(ChatColor.GRAY + "Actuelle: " + tournamentManager.getPouleLabel(playerName));
             lore.add(ChatColor.GRAY + "Statut: " + (onlinePlayer != null ? ChatColor.GREEN + "En ligne" : ChatColor.RED + "Hors ligne"));
             
@@ -152,7 +152,7 @@ public class PouleMenu extends Menu {
                 MenuListener.selectedMatch.put(player.getUniqueId(), matchId);
                 MenuListener.selectedMatchPhase.put(player.getUniqueId(), tournamentManager.getCurrentPhase());
                 MenuListener.selectedPool.put(player.getUniqueId(), poule);
-                player.sendMessage(ChatColor.YELLOW + "Match " + matchId + " de la poule " + poule + " sélectionné. Choisissez un joueur à assigner.");
+                player.sendMessage(ChatColor.YELLOW + "Match " + matchId + " de la poule " + tournamentManager.getPoolLetter(poule) + " sélectionné. Choisissez un joueur à assigner.");
             } catch (NumberFormatException ignored) {
             }
             return;
@@ -169,7 +169,7 @@ public class PouleMenu extends Menu {
             // On vérifie que le joueur existe (soit en ligne, soit en DB)
             if (Bukkit.getPlayerExact(playerName) != null || fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getPlayerByName(playerName).isPresent()) {
                 tournamentManager.assignPlayerToMatch(selectedPhase, selectedPoule, selectedMatchId, playerName);
-                player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné au match " + selectedMatchId + " de la poule " + selectedPoule + ".");
+                player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné au match " + selectedMatchId + " de la poule " + tournamentManager.getPoolLetter(selectedPoule) + ".");
                 
                 // On réinitialise la sélection après l'assignation
                 MenuListener.selectedMatch.remove(player.getUniqueId());
@@ -184,12 +184,12 @@ public class PouleMenu extends Menu {
         // Sinon, gestion de l'assignation à la poule
         if (tournamentManager.getPlayersInPoule(poule).contains(playerName)) {
             tournamentManager.unassignPlayer(playerName);
-            player.sendMessage(ChatColor.YELLOW + "Joueur " + playerName + " désassigné de la poule " + poule + ".");
+            player.sendMessage(ChatColor.YELLOW + "Joueur " + playerName + " désassigné de la poule " + tournamentManager.getPoolLetter(poule) + ".");
         } else {
             // Check if it's a player from the assign section (exists in DB)
             if (fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getPlayerByName(playerName).isPresent()) {
                 tournamentManager.setPlayerPoule(playerName, poule);
-                player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné à la poule " + poule + ".");
+                player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné à la poule " + tournamentManager.getPoolLetter(poule) + ".");
             }
         }
         open(); // Refresh

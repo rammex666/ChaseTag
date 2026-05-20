@@ -95,3 +95,4 @@ All future modifications to the project must be logged here with the date of the
 - **2026-05-05:** Added custom Cobweb item in-game: Spawns a 2x2 cobweb box for 2 seconds upon right-click. Item is given at the start of each round.
 - **2026-05-05:** Updated Discord whitelist command to support offline players: Automatically fetches UUID from Mojang API if the player has never joined.
 - **2026-05-06:** Modification de l'item du mode Staff : Remplacement de la boussole par une Nether Star pour la téléportation inter-serveurs.
+- **2026-05-20:** Mise à jour du système de tournoi : Suppression de la Phase 4, ajout des Quarts de finale et de la Petite Finale avant la Finale. Correction de la configuration des 8èmes de finale (8 matches) et amélioration de l'affichage de la phase suivante dans le menu admin. Renommage des poules (1, 2, 3...) en lettres (A, B, C...) dans toute l'interface.

@@ -41,7 +41,7 @@ public class TournamentAdminMenu extends Menu {
             for (int i = 1; i <= currentPhase.getPouleCount(); i++) {
                 ItemStack pouleItem = MenuUtils.createMenuItem(
                         Material.ORANGE_CONCRETE,
-                        ChatColor.GOLD + "Poule " + i,
+                        ChatColor.GOLD + "Poule " + tournamentManager.getPoolLetter(i),
                         List.of(
                                 ChatColor.GRAY + "Joueurs: " + tournamentManager.getPlayersCountInPoule(i) + "/" + currentPhase.getPlayersPerPoule(),
                                 ChatColor.GRAY + "Clic pour ouvrir la poule",
@@ -75,9 +75,17 @@ public class TournamentAdminMenu extends Menu {
             inventory.setItem(18, bracketInfo);
         }
 
-        String nextPhaseLabel = tournamentManager.getCurrentPhase().matches("Phase \\d+")
-                ? "Phase " + (Integer.parseInt(tournamentManager.getCurrentPhase().replaceAll("\\D", "")) + 1)
-                : "Phase 2";
+        List<PhaseConfig> configs = tournamentManager.getPhaseConfigs();
+        String currentPhaseName = tournamentManager.getCurrentPhase();
+        String nextPhaseLabel = "Fin";
+        for (int i = 0; i < configs.size(); i++) {
+            if (configs.get(i).getName().equals(currentPhaseName)) {
+                if (i + 1 < configs.size()) {
+                    nextPhaseLabel = configs.get(i + 1).getName();
+                }
+                break;
+            }
+        }
 
         ItemStack phaseInfo = MenuUtils.createMenuItem(
                 Material.PAPER,
@@ -170,7 +178,14 @@ public class TournamentAdminMenu extends Menu {
             return;
         }
 
-        if (displayName.startsWith(ChatColor.GOLD + "Match ") || displayName.equals(ChatColor.AQUA + "Gérer le bracket")) {
+        if (displayName.startsWith(ChatColor.GOLD + "Match ") || displayName.equals(ChatColor.AQUA + "Voir tout le Bracket")) {
+            if (displayName.startsWith(ChatColor.GOLD + "Match ")) {
+                try {
+                    int matchId = Integer.parseInt(ChatColor.stripColor(displayName).replace("Match ", ""));
+                    MenuListener.selectedMatch.put(player.getUniqueId(), matchId);
+                    MenuListener.selectedMatchPhase.put(player.getUniqueId(), tournamentManager.getCurrentPhase());
+                } catch (NumberFormatException ignored) {}
+            }
             new BracketMenu(player, tournamentManager, tournamentManager.getCurrentPhase()).open();
             return;
         }
@@ -218,8 +233,15 @@ public class TournamentAdminMenu extends Menu {
         if (!displayName.startsWith(ChatColor.GOLD + "Poule ")) {
             return 0;
         }
+        String poolStr = displayName.replace(ChatColor.GOLD + "Poule ", "");
+        if (poolStr.length() == 1) {
+            char c = poolStr.charAt(0);
+            if (c >= 'A' && c <= 'Z') {
+                return (c - 'A') + 1;
+            }
+        }
         try {
-            return Integer.parseInt(displayName.replace(ChatColor.GOLD + "Poule ", ""));
+            return Integer.parseInt(poolStr);
         } catch (NumberFormatException e) {
             return 0;
         }

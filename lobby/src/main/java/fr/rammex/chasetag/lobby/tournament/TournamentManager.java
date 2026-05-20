@@ -137,9 +137,14 @@ public class TournamentManager {
         return playerPoule.getOrDefault(playerName, 0);
     }
 
+    public String getPoolLetter(int poule) {
+        if (poule < 1) return "?";
+        return String.valueOf((char) ('A' + (poule - 1)));
+    }
+
     public String getPouleLabel(String playerName) {
         int poule = getPlayerPoule(playerName);
-        return poule == 0 ? "Aucune" : "Poule " + poule;
+        return poule == 0 ? "Aucune" : "Poule " + getPoolLetter(poule);
     }
 
     public boolean isPlayerEliminated(String playerName) {
