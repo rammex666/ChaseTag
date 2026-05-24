@@ -26,6 +26,8 @@ public class Game {
     private boolean isTestDev = false;
 
     private final Map<String, Integer> playerScores = new HashMap<>(); // UUID -> Score
+    private final Map<String, Integer> bestHunterTimes = new HashMap<>(); // UUID -> Best Time (Min)
+    private final Map<String, Integer> bestRunnerTimes = new HashMap<>(); // UUID -> Best Time (Max)
 
     public Game(String gameServerID, Arena arena){
         this.gameServerID = gameServerID;
@@ -140,5 +142,27 @@ public class Game {
 
     public Map<String, Integer> getPlayerScores() {
         return playerScores;
+    }
+
+    public void updateBestHunterTime(String playerUUID, int time) {
+        int currentBest = bestHunterTimes.getOrDefault(playerUUID, Integer.MAX_VALUE);
+        if (time < currentBest) {
+            bestHunterTimes.put(playerUUID, time);
+        }
+    }
+
+    public void updateBestRunnerTime(String playerUUID, int time) {
+        int currentBest = bestRunnerTimes.getOrDefault(playerUUID, 0);
+        if (time > currentBest) {
+            bestRunnerTimes.put(playerUUID, time);
+        }
+    }
+
+    public Map<String, Integer> getBestHunterTimes() {
+        return bestHunterTimes;
+    }
+
+    public Map<String, Integer> getBestRunnerTimes() {
+        return bestRunnerTimes;
     }
 }

@@ -69,13 +69,13 @@ public class TournamentMatch {
         if (playerName == null) {
             return false;
         }
-        return playerName.equals(player1) || playerName.equals(player2);
+        return playerName.equalsIgnoreCase(player1) || playerName.equalsIgnoreCase(player2);
     }
 
     public boolean isPlayerReady(String playerName) {
         if (playerName == null) return false;
-        if (playerName.equals(player1)) return player1Ready;
-        if (playerName.equals(player2)) return player2Ready;
+        if (playerName.equalsIgnoreCase(player1)) return player1Ready;
+        if (playerName.equalsIgnoreCase(player2)) return player2Ready;
         return false;
     }
 

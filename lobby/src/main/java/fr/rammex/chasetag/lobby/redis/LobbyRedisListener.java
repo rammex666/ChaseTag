@@ -110,8 +110,27 @@ public class LobbyRedisListener {
 
             System.out.println("Partie terminée sur le serveur " + msg.getServerId() + ", gagnant : " + msg.getWinnerName());
             if (msg.getWinnerName() != null && !msg.getWinnerName().equalsIgnoreCase("Aucun")) {
+                String winnerUuid = msg.getWinnerUuid();
+                int winnerScore = (msg.getPlayerScores() != null && winnerUuid != null) ? msg.getPlayerScores().getOrDefault(winnerUuid, 0) : 0;
+                
+                // Trouver l'adversaire
+                String loserName = "Inconnu";
+                int loserScore = 0;
+                
+                if (msg.getPlayerUuids() != null && msg.getPlayerScores() != null) {
+                    for (String uuidStr : msg.getPlayerUuids()) {
+                        if (!uuidStr.equals(winnerUuid)) {
+                            org.bukkit.OfflinePlayer loserPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidStr));
+                            loserName = loserPlayer.getName() != null ? loserPlayer.getName() : "Inconnu";
+                            loserScore = msg.getPlayerScores().getOrDefault(uuidStr, 0);
+                            break;
+                        }
+                    }
+                }
+
                 Bukkit.broadcastMessage(ChatColor.GOLD + "[ChaseTag] " + ChatColor.AQUA + msg.getWinnerName() + 
-                    ChatColor.YELLOW + " a gagné sa partie sur le serveur " + ChatColor.WHITE + msg.getServerId() + " !");
+                    ChatColor.GRAY + " (" + winnerScore + " pts)" + ChatColor.YELLOW + " a battu " + 
+                    ChatColor.RED + loserName + ChatColor.GRAY + " (" + loserScore + " pts) !");
             }
 
             // Sauvegarder les stats dans MongoDB
@@ -131,14 +150,25 @@ public class LobbyRedisListener {
                             player.incrementLosses();
                         }
                         player.updateBestScore(gameType, score);
+                        player.addPoints(score);
+                        
+                        // Mettre à jour les meilleurs temps
+                        if (msg.getBestHunterTimes() != null && msg.getBestHunterTimes().containsKey(uuidStr)) {
+                            player.updateBestHunterTime(msg.getBestHunterTimes().get(uuidStr));
+                        }
+                        if (msg.getBestRunnerTimes() != null && msg.getBestRunnerTimes().containsKey(uuidStr)) {
+                            player.updateBestRunnerTime(msg.getBestRunnerTimes().get(uuidStr));
+                        }
                         
                         plugin.getPlayerMongoRepository().savePlayer(player);
                         plugin.getLogger().info("Stats sauvegardées pour " + player.getPlayerName() + " (" + gameType + ")");
 
                         // Reset readiness for tournament matches
                         plugin.getTournamentManager().resetPlayerReady(player.getPlayerName());
+
                         org.bukkit.entity.Player onlinePlayer = Bukkit.getPlayer(player.getPlayerName());
                         if (onlinePlayer != null) {
+                            onlinePlayer.sendMessage(ChatColor.GOLD + "[ChaseTag] " + ChatColor.YELLOW + "Tu as gagné " + ChatColor.AQUA + score + ChatColor.YELLOW + " points lors de cette partie !");
                             plugin.getServer().getScheduler().runTask(plugin, () -> {
                                 // Refresh the ready item in their inventory
                                 new fr.rammex.chasetag.lobby.listener.LobbyListener(plugin).updateReadyItem(onlinePlayer);

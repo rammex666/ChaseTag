@@ -70,11 +70,39 @@ public class Player {
         setPlayerData("games_played", games);
     }
 
+    public void addPoints(int points) {
+        int currentPoints = getIntData("points") + points;
+        setPlayerData("points", currentPoints);
+    }
+
+    public int getPoints() {
+        return getIntData("points");
+    }
+
     public void updateBestScore(String type, int score) {
         String key = "best_score_" + type.toLowerCase();
         int currentBest = getIntData(key);
         if (score > currentBest) {
             setPlayerData(key, score);
+        }
+    }
+
+    public void updateBestHunterTime(int time) {
+        String key = "best_hunter_time";
+        int currentBest = getIntData(key);
+        // On initialise à 0, donc si currentBest est 0, n'importe quel temps est meilleur.
+        // Sinon, on veut le temps le plus court.
+        if (currentBest == 0 || time < currentBest) {
+            setPlayerData(key, time);
+        }
+    }
+
+    public void updateBestRunnerTime(int time) {
+        String key = "best_runner_time";
+        int currentBest = getIntData(key);
+        // On veut le temps le plus long
+        if (time > currentBest) {
+            setPlayerData(key, time);
         }
     }
 
@@ -92,6 +120,14 @@ public class Player {
 
     public int getBestScore(String type) {
         return getIntData("best_score_" + type.toLowerCase());
+    }
+
+    public int getBestHunterTime() {
+        return getIntData("best_hunter_time");
+    }
+
+    public int getBestRunnerTime() {
+        return getIntData("best_runner_time");
     }
 
     private int getIntData(String key) {

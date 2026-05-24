@@ -150,6 +150,17 @@ public class TournamentAdminMenu extends Menu {
         );
         inventory.setItem(31, launchMatches);
 
+        ItemStack clearMatches = MenuUtils.createMenuItem(
+                Material.BUCKET,
+                ChatColor.RED + "Vider les matchs",
+                List.of(
+                        ChatColor.GRAY + "Retire tous les joueurs des matchs",
+                        ChatColor.GRAY + "mais les garde dans leurs poules.",
+                        ChatColor.DARK_RED + "Action irréversible !"
+                )
+        );
+        inventory.setItem(40, clearMatches);
+
         ItemStack back = MenuUtils.createBackButton(ChatColor.YELLOW + "Retour", ChatColor.GRAY + "Retour au menu principal");
         inventory.setItem(53, back);
     }
@@ -216,6 +227,13 @@ public class TournamentAdminMenu extends Menu {
             boolean started = !tournamentManager.isMatchesStarted();
             tournamentManager.setMatchesStarted(started);
             player.sendMessage(started ? ChatColor.GREEN + "Lancement des matchs autorisé !" : ChatColor.RED + "Lancement des matchs bloqué.");
+            open(); // Refresh
+            return;
+        }
+
+        if (displayName.equals(ChatColor.RED + "Vider les matchs")) {
+            tournamentManager.unassignAllPlayersFromMatches();
+            player.sendMessage(ChatColor.GREEN + "Tous les matchs ont été vidés. Les joueurs restent dans leurs poules.");
             open(); // Refresh
             return;
         }

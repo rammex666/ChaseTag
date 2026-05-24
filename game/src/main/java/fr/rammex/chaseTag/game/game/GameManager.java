@@ -251,9 +251,17 @@ public class GameManager {
 
         if (runner != null) {
             game.addScore(runner.getPlayerUUID(), runnerPoints);
+            game.updateBestRunnerTime(runner.getPlayerUUID(), runnerPoints);
         }
         if (chaser != null) {
             game.addScore(chaser.getPlayerUUID(), chaserPoints);
+            // Si le chassé a été attrapé, on met à jour le temps du chasseur
+            // runnerPoints est le temps écoulé (le temps de survie du runner)
+            // Si le runner survit 60s, runnerPoints = 60, mais le chasseur n'a pas attrapé.
+            // On ne met à jour le temps du chasseur que s'il y a eu un tag.
+            if (runnerPoints < 60) {
+                game.updateBestHunterTime(chaser.getPlayerUUID(), runnerPoints);
+            }
         }
 
         String runnerName = (runner != null && runner.getBukkitPlayer() != null) ? runner.getBukkitPlayer().getName() : "Le chassé";
@@ -409,7 +417,7 @@ public class GameManager {
                 .map(Player::getPlayerUUID)
                 .collect(Collectors.toList());
 
-        plugin.onGameFinished(winnerUuid, winnerName, playerUuids, game.getPlayerScores());
+        plugin.onGameFinished(winnerUuid, winnerName, playerUuids, game.getPlayerScores(), game.getBestHunterTimes(), game.getBestRunnerTimes());
     }
 
     public Game getGame() {

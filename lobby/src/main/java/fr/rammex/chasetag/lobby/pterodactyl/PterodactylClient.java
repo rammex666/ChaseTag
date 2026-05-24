@@ -9,6 +9,9 @@ import okhttp3.*;
 import org.bukkit.Bukkit;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PterodactylClient {
 
@@ -21,6 +24,13 @@ public class PterodactylClient {
     private final String clientApiKey = "ptlc_XnLysdJEyrMTaTeyd99uod02x5in1VCrJjD8rQLnUrg";
     private final int eggId;
     private final OkHttpClient http = new OkHttpClient();
+    
+    // Lock global pour synchroniser les créations de serveurs et les allocations
+    private static final Object SPAWN_LOCK = new Object();
+    // Cache local des allocations récemment choisies pour éviter les doublons lors de spawns simultanés
+    private static final Set<Integer> recentlySelectedAllocations = Collections.synchronizedSet(new HashSet<>());
+    // Date du dernier spawn pour gérer le délai
+    private static long lastSpawnTime = 0;
 
     public PterodactylClient(String apiUrl, String apiKey, int eggId) {
         this.apiUrl = apiUrl.replaceAll("/$", "");
@@ -40,84 +50,115 @@ public class PterodactylClient {
             downloadUrl = "http://play.ownedcup.fr:25599/server.tar.gz";
         }
 
-        int allocationId = getAvailableAllocationId();
-        int port = getAllocationPort(allocationId);
+        int allocationId;
+        int port;
 
-        String externalHost = ChaseTagLobby.getInstance()
-                .getConfig().getString("pterodactyl.external-host", "localhost");
-
-        JsonObject env = new JsonObject();
-        env.addProperty("GAME_ID", gameId);
-        env.addProperty("GAME_HOST", externalHost);
-        env.addProperty("GAME_PORT", port);
-        env.addProperty("SERVER_JARFILE", "server.jar");
-        env.addProperty("DOWNLOAD_URL", downloadUrl);
-
-        JsonObject limits = new JsonObject();
-        limits.addProperty("memory", 2048);
-        limits.addProperty("swap", 0);
-        limits.addProperty("disk", 1024);
-        limits.addProperty("io", 500);
-        limits.addProperty("cpu", 150);
-
-        JsonObject featureLimits = new JsonObject();
-        featureLimits.addProperty("databases", 0);
-        featureLimits.addProperty("backups", 0);
-        featureLimits.addProperty("allocations", 1);
-
-        JsonObject allocation = new JsonObject();
-        allocation.addProperty("default", allocationId);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("name", "chasetag-" + gameId);
-        body.addProperty("egg", eggId);
-        body.addProperty("user", pterodactylUserId);
-        body.addProperty("docker_image", "ghcr.io/pterodactyl/yolks:java_21");
-        body.addProperty("startup", "bash start.sh");
-        body.addProperty("skip_scripts", false);
-        body.add("environment", env);
-        body.add("limits", limits);
-        body.add("feature_limits", featureLimits);
-        body.add("allocation", allocation);
-
-        Request request = new Request.Builder()
-                .url(apiUrl + "/api/application/servers")
-                .post(RequestBody.create(body.toString(), JSON))
-                .addHeader("Authorization", "Bearer " + apiKey)
-                .addHeader("Accept", "application/json")
-                .addHeader("Content-Type", "application/json")
-                .build();
-
-        try (Response response = http.newCall(request).execute()) {
-            String responseBody = response.body().string();
-            if (!response.isSuccessful()) {
-                throw new IOException("Pterodactyl API error " + response.code()
-                        + " : " + responseBody);
-            }
-
-            JsonObject result = JsonParser.parseString(responseBody)
-                    .getAsJsonObject()
-                    .getAsJsonObject("attributes");
-
-            String serverId = result.get("identifier").getAsString();
-            int internalId = result.get("id").getAsInt();
-
-            ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId
-                    + ", internalId=" + internalId
-                    + ", allocationPort=" + port
-                    + ", externalHost=" + externalHost
-                    + ", downloadUrl=" + downloadUrl);
-
-            Bukkit.getScheduler().runTaskAsynchronously(ChaseTagLobby.getInstance(), () -> {
+        // On synchronise la recherche d'allocation et la création du serveur pour éviter les doublons (Race Condition)
+        synchronized (SPAWN_LOCK) {
+            // Gestion du délai de 3 secondes entre chaque spawn
+            long currentTime = System.currentTimeMillis();
+            long timeSinceLastSpawn = currentTime - lastSpawnTime;
+            if (timeSinceLastSpawn < 3000) {
                 try {
-                    waitForInstallation(internalId);
-                    startServer(serverId);
-                } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
+                    long waitTime = 3000 - timeSinceLastSpawn;
+                    ChaseTagLobby.getInstance().getLogger().info("Attente de " + waitTime + "ms avant de lancer le prochain serveur...");
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-            });
+            }
+            lastSpawnTime = System.currentTimeMillis();
 
-            return new ServerInfo(serverId, port, internalId);
+            allocationId = getAvailableAllocationId();
+            port = getAllocationPort(allocationId);
+            
+            // On marque l'allocation comme "utilisée" localement immédiatement
+            recentlySelectedAllocations.add(allocationId);
+
+            String externalHost = ChaseTagLobby.getInstance()
+                    .getConfig().getString("pterodactyl.external-host", "localhost");
+
+            JsonObject env = new JsonObject();
+            env.addProperty("GAME_ID", gameId);
+            env.addProperty("GAME_HOST", externalHost);
+            env.addProperty("GAME_PORT", port);
+            env.addProperty("SERVER_JARFILE", "server.jar");
+            env.addProperty("DOWNLOAD_URL", downloadUrl);
+
+            JsonObject limits = new JsonObject();
+            limits.addProperty("memory", 2048);
+            limits.addProperty("swap", 0);
+            limits.addProperty("disk", 1024);
+            limits.addProperty("io", 500);
+            limits.addProperty("cpu", 150);
+
+            JsonObject featureLimits = new JsonObject();
+            featureLimits.addProperty("databases", 0);
+            featureLimits.addProperty("backups", 0);
+            featureLimits.addProperty("allocations", 1);
+
+            JsonObject allocation = new JsonObject();
+            allocation.addProperty("default", allocationId);
+
+            JsonObject body = new JsonObject();
+            body.addProperty("name", "chasetag-" + gameId);
+            body.addProperty("egg", eggId);
+            body.addProperty("user", pterodactylUserId);
+            body.addProperty("docker_image", "ghcr.io/pterodactyl/yolks:java_21");
+            body.addProperty("startup", "bash start.sh");
+            body.addProperty("skip_scripts", false);
+            body.add("environment", env);
+            body.add("limits", limits);
+            body.add("feature_limits", featureLimits);
+            body.add("allocation", allocation);
+
+            Request request = new Request.Builder()
+                    .url(apiUrl + "/api/application/servers")
+                    .post(RequestBody.create(body.toString(), JSON))
+                    .addHeader("Authorization", "Bearer " + apiKey)
+                    .addHeader("Accept", "application/json")
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            try (Response response = http.newCall(request).execute()) {
+                String responseBody = response.body().string();
+                if (!response.isSuccessful()) {
+                    // En cas d'échec, on libère l'allocation de notre cache local
+                    recentlySelectedAllocations.remove(allocationId);
+                    throw new IOException("Pterodactyl API error " + response.code()
+                            + " : " + responseBody);
+                }
+
+                JsonObject result = JsonParser.parseString(responseBody)
+                        .getAsJsonObject()
+                        .getAsJsonObject("attributes");
+
+                String serverId = result.get("identifier").getAsString();
+                int internalId = result.get("id").getAsInt();
+
+                ChaseTagLobby.getInstance().getLogger().info("Pterodactyl server created: id=" + serverId
+                        + ", internalId=" + internalId
+                        + ", allocationPort=" + port
+                        + ", externalHost=" + externalHost
+                        + ", downloadUrl=" + downloadUrl);
+
+                // On nettoie le cache après un petit délai (une fois que Ptero a fini d'assigner l'ID)
+                final int finalAllocId = allocationId;
+                Bukkit.getScheduler().runTaskLater(ChaseTagLobby.getInstance(), () -> {
+                    recentlySelectedAllocations.remove(finalAllocId);
+                }, 200L); // 10 secondes de sécurité
+
+                Bukkit.getScheduler().runTaskAsynchronously(ChaseTagLobby.getInstance(), () -> {
+                    try {
+                        waitForInstallation(internalId);
+                        startServer(serverId);
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+                return new ServerInfo(serverId, port, internalId);
+            }
         }
     }
 
@@ -210,11 +251,13 @@ public class PterodactylClient {
 
             for (JsonElement el : data) {
                 JsonObject attrs = el.getAsJsonObject().getAsJsonObject("attributes");
-                if (!attrs.get("assigned").getAsBoolean()) {
-                    return attrs.get("id").getAsInt();
+                int id = attrs.get("id").getAsInt();
+                // On vérifie si l'allocation est libre sur Ptero ET pas déjà en train d'être utilisée localement
+                if (!attrs.get("assigned").getAsBoolean() && !recentlySelectedAllocations.contains(id)) {
+                    return id;
                 }
             }
-            throw new IOException("Aucune allocation disponible sur le node " + nodeId);
+            throw new IOException("Aucune allocation disponible sur le node " + nodeId + " (vérifiez vos ports libres)");
         }
     }
 

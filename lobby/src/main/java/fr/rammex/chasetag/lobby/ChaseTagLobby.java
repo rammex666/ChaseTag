@@ -116,6 +116,7 @@ public final class ChaseTagLobby extends JavaPlugin {
         getCommand("staff").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
         getCommand("freeze").setExecutor(new fr.rammex.chasetag.lobby.command.StaffCommand(this));
         getCommand("podium").setExecutor(new PodiumCommand(this));
+        getCommand("ready").setExecutor(new fr.rammex.chasetag.lobby.command.ReadyCommand(this));
 
         // Listeners
         Bukkit.getPluginManager().registerEvents(new LobbyListener(this), this);

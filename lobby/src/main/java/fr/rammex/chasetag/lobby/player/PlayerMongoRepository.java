@@ -78,6 +78,14 @@ public class PlayerMongoRepository {
         return players;
     }
 
+    public java.util.List<Player> getWhitelistedPlayers() {
+        java.util.List<Player> players = new java.util.ArrayList<>();
+        for (Document document : collection.find(Filters.eq("data.whitelisted", true))) {
+            players.add(toPlayer(document));
+        }
+        return players;
+    }
+
     private Player toPlayer(Document document) {
         if (document == null) {
             return null;

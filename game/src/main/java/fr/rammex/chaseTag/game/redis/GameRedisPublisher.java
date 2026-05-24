@@ -31,8 +31,8 @@ public class GameRedisPublisher {
     }
 
     // Appelé quand la partie se termine
-    public void publishGameEnd(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores) {
-        GameEndMessage msg = new GameEndMessage(serverId, winnerUuid, winnerName, playerUuids, playerScores);
+    public void publishGameEnd(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores, java.util.Map<String, Integer> bestHunterTimes, java.util.Map<String, Integer> bestRunnerTimes) {
+        GameEndMessage msg = new GameEndMessage(serverId, winnerUuid, winnerName, playerUuids, playerScores, bestHunterTimes, bestRunnerTimes);
         publish(RedisChannel.GAME_END, MessageSerializer.serialize(msg));
     }
 

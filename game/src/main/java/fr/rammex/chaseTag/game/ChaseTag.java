@@ -53,7 +53,11 @@ public final class ChaseTag extends JavaPlugin {
         saveDefaultConfig();
 
         // MongoDB initialization
-        String mongoUri = getConfig().getString("mongodb.uri", "mongodb://localhost:27017");
+        String mongoUri = getConfig().getString("mongodb.uri");
+        if (mongoUri == null || mongoUri.isBlank()) {
+            mongoUri = "mongodb://localhost:27017";
+            getLogger().warning("mongodb.uri est vide dans config.yml, utilisation de la valeur par défaut: " + mongoUri);
+        }
         String mongoDatabase = getConfig().getString("mongodb.database", "chasetag");
         this.mongoManager = new MongoManager(mongoUri, mongoDatabase);
         this.playerMongoRepository = new PlayerMongoRepository(mongoManager);
@@ -196,8 +200,8 @@ public final class ChaseTag extends JavaPlugin {
         return playerMongoRepository;
     }
 
-    public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores) {
-        redisPublisher.publishGameEnd(winnerUuid, winnerName, playerUuids, playerScores);
+    public void onGameFinished(String winnerUuid, String winnerName, List<String> playerUuids, java.util.Map<String, Integer> playerScores, java.util.Map<String, Integer> bestHunterTimes, java.util.Map<String, Integer> bestRunnerTimes) {
+        redisPublisher.publishGameEnd(winnerUuid, winnerName, playerUuids, playerScores, bestHunterTimes, bestRunnerTimes);
     }
 
     private void loadEvents(){

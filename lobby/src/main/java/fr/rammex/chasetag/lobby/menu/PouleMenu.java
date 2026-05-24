@@ -48,7 +48,7 @@ public class PouleMenu extends Menu {
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "Poule: " + tournamentManager.getPoolLetter(poule));
             lore.add(ChatColor.GRAY + "Éliminé: " + (eliminated ? "Oui" : "Non"));
-            lore.add(ChatColor.GRAY + "Clic pour sélectionner ce joueur");
+            lore.add(ChatColor.GRAY + "Clic pour désassigner de cette poule");
             ItemStack head = onlinePlayer != null
                     ? MenuUtils.createPlayerHead(onlinePlayer, ChatColor.GREEN + playerName, lore)
                     : MenuUtils.createMenuItem(Material.PLAYER_HEAD, ChatColor.GREEN + playerName, lore);
@@ -83,30 +83,12 @@ public class PouleMenu extends Menu {
             matchSlot += 2;
         }
 
-        int assignSlot = 35;
-        List<fr.rammex.chasetag.lobby.player.Player> allPlayers = fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getAllPlayers();
-        for (fr.rammex.chasetag.lobby.player.Player dbPlayer : allPlayers) {
-            if (assignSlot >= 52) {
-                break;
-            }
-            String playerName = dbPlayer.getPlayerName();
-            if (poolPlayers.contains(playerName) || tournamentManager.isPlayerEliminated(playerName)) {
-                continue;
-            }
-            
-            org.bukkit.entity.Player onlinePlayer = Bukkit.getPlayerExact(playerName);
-            List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Clic pour assigner à la poule " + tournamentManager.getPoolLetter(poule));
-            lore.add(ChatColor.GRAY + "Actuelle: " + tournamentManager.getPouleLabel(playerName));
-            lore.add(ChatColor.GRAY + "Statut: " + (onlinePlayer != null ? ChatColor.GREEN + "En ligne" : ChatColor.RED + "Hors ligne"));
-            
-            ItemStack head = onlinePlayer != null 
-                    ? MenuUtils.createPlayerHead(onlinePlayer, ChatColor.AQUA + playerName, lore)
-                    : MenuUtils.createMenuItem(Material.PLAYER_HEAD, ChatColor.AQUA + playerName, lore);
-            
-            inventory.setItem(assignSlot, head);
-            assignSlot++;
-        }
+        ItemStack assignToPool = MenuUtils.createMenuItem(
+                Material.NAME_TAG,
+                ChatColor.GREEN + "Assigner un joueur à la poule",
+                List.of(ChatColor.GRAY + "Clique ici puis écris le pseudo", ChatColor.GRAY + "du joueur dans le chat.")
+        );
+        inventory.setItem(48, assignToPool);
 
         ItemStack chooseMap = MenuUtils.createMenuItem(
                 Material.MAP,
@@ -145,6 +127,14 @@ public class PouleMenu extends Menu {
             return;
         }
 
+        if (displayName.equals(ChatColor.GREEN + "Assigner un joueur à la poule")) {
+            player.closeInventory();
+            player.sendMessage(ChatColor.YELLOW + "Écris le pseudo du joueur à assigner à la poule " + tournamentManager.getPoolLetter(poule) + " dans le chat.");
+            player.sendMessage(ChatColor.GRAY + "(Ou écris 'cancel' pour annuler)");
+            MenuListener.waitingForChatInput.put(player.getUniqueId(), "POOL_ASSIGN:" + poule);
+            return;
+        }
+
         if (displayName.startsWith(ChatColor.GOLD + "Match ")) {
             String matchLabel = ChatColor.stripColor(displayName).replace("Match ", "");
             try {
@@ -152,7 +142,8 @@ public class PouleMenu extends Menu {
                 MenuListener.selectedMatch.put(player.getUniqueId(), matchId);
                 MenuListener.selectedMatchPhase.put(player.getUniqueId(), tournamentManager.getCurrentPhase());
                 MenuListener.selectedPool.put(player.getUniqueId(), poule);
-                player.sendMessage(ChatColor.YELLOW + "Match " + matchId + " de la poule " + tournamentManager.getPoolLetter(poule) + " sélectionné. Choisissez un joueur à assigner.");
+                player.sendMessage(ChatColor.YELLOW + "Match " + matchId + " de la poule " + tournamentManager.getPoolLetter(poule) + " sélectionné.");
+                player.sendMessage(ChatColor.YELLOW + "Maintenant, clique sur 'Assigner un joueur à la poule' pour choisir le joueur.");
             } catch (NumberFormatException ignored) {
             }
             return;
@@ -166,8 +157,8 @@ public class PouleMenu extends Menu {
         Integer selectedPoule = MenuListener.selectedPool.get(player.getUniqueId());
 
         if (selectedMatchId != null && selectedPhase != null && selectedPoule != null && selectedPoule == poule) {
-            // On vérifie que le joueur existe (soit en ligne, soit en DB)
-            if (Bukkit.getPlayerExact(playerName) != null || fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getPlayerByName(playerName).isPresent()) {
+            // On vérifie si le joueur est dans la poule ou en ligne
+            if (tournamentManager.getPlayersInPoule(poule).contains(playerName) || Bukkit.getPlayerExact(playerName) != null) {
                 tournamentManager.assignPlayerToMatch(selectedPhase, selectedPoule, selectedMatchId, playerName);
                 player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné au match " + selectedMatchId + " de la poule " + tournamentManager.getPoolLetter(selectedPoule) + ".");
                 
@@ -181,18 +172,12 @@ public class PouleMenu extends Menu {
             }
         }
 
-        // Sinon, gestion de l'assignation à la poule
+        // Sinon, gestion de l'assignation à la poule (Désassignation ici car on clique sur une tête déjà présente)
         if (tournamentManager.getPlayersInPoule(poule).contains(playerName)) {
             tournamentManager.unassignPlayer(playerName);
             player.sendMessage(ChatColor.YELLOW + "Joueur " + playerName + " désassigné de la poule " + tournamentManager.getPoolLetter(poule) + ".");
-        } else {
-            // Check if it's a player from the assign section (exists in DB)
-            if (fr.rammex.chasetag.lobby.ChaseTagLobby.getInstance().getPlayerMongoRepository().getPlayerByName(playerName).isPresent()) {
-                tournamentManager.setPlayerPoule(playerName, poule);
-                player.sendMessage(ChatColor.GREEN + "Joueur " + playerName + " assigné à la poule " + tournamentManager.getPoolLetter(poule) + ".");
-            }
+            open(); // Refresh
         }
-        open(); // Refresh
     }
 
     public TournamentManager getTournamentManager() {
