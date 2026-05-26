@@ -56,11 +56,6 @@ public class DiscordBot extends ListenerAdapter {
             Guild guild = jda.getGuildById(guildId);
             if (guild != null) {
                 guild.updateCommands().addCommands(
-                        Commands.slash("wl", "Gérer la whitelist")
-                                .addOptions(new OptionData(OptionType.STRING, "action", "add ou remove").setRequired(true)
-                                        .addChoice("add", "add")
-                                        .addChoice("remove", "remove"))
-                                .addOption(OptionType.STRING, "pseudo", "Pseudo Minecraft du joueur", true),
                         Commands.slash("setrank", "Modifier le grade d'un joueur")
                                 .addOption(OptionType.STRING, "pseudo", "Pseudo Minecraft du joueur", true)
                                 .addOption(OptionType.STRING, "rank", "Le nouveau grade", true, true),
@@ -70,8 +65,7 @@ public class DiscordBot extends ListenerAdapter {
                                 .addOption(OptionType.STRING, "id", "L'ID de la sanction", true),
                         Commands.slash("participants", "Obtenir la liste des participants au tournoi"),
                         Commands.slash("stats", "Afficher les statistiques d'un joueur")
-                                .addOption(OptionType.STRING, "pseudo", "Pseudo Minecraft du joueur", true),
-                        Commands.slash("wllist", "Afficher la liste des joueurs whitelists")
+                                .addOption(OptionType.STRING, "pseudo", "Pseudo Minecraft du joueur", true)
                 ).queue();
             }
 
@@ -89,11 +83,7 @@ public class DiscordBot extends ListenerAdapter {
             return;
         }
 
-        if (event.getName().equals("wl")) {
-            String action = event.getOption("action").getAsString();
-            String pseudo = event.getOption("pseudo").getAsString();
-            handleWhitelist(event, action, pseudo);
-        } else if (event.getName().equals("setrank")) {
+        if (event.getName().equals("setrank")) {
             String pseudo = event.getOption("pseudo").getAsString();
             String rankName = event.getOption("rank").getAsString();
             handleSetRank(event, pseudo, rankName);
@@ -106,26 +96,7 @@ public class DiscordBot extends ListenerAdapter {
         } else if (event.getName().equals("stats")) {
             String pseudo = event.getOption("pseudo").getAsString();
             handleStats(event, pseudo);
-        } else if (event.getName().equals("wllist")) {
-            handleWlList(event);
         }
-    }
-
-    private void handleWlList(SlashCommandInteractionEvent event) {
-        java.util.List<Player> whitelisted = plugin.getPlayerMongoRepository().getWhitelistedPlayers();
-        
-        String list = whitelisted.stream()
-                .map(Player::getPlayerName)
-                .collect(Collectors.joining(", "));
-
-        EmbedBuilder embed = new EmbedBuilder();
-        embed.setTitle("📄 Liste de la Whitelist");
-        embed.setColor(Color.WHITE);
-        embed.setDescription(list.isEmpty() ? "Aucun joueur n'est whiteliste." : list);
-        embed.setFooter("Total : " + whitelisted.size() + " joueurs");
-        embed.setTimestamp(java.time.Instant.now());
-
-        event.replyEmbeds(embed.build()).queue();
     }
 
     private void handleStats(SlashCommandInteractionEvent event, String pseudo) {
@@ -498,73 +469,6 @@ private void drawRecordCard(Graphics2D g, String label, String value, int x, int
         embed.setTimestamp(java.time.Instant.now());
 
         channel.sendMessageEmbeds(embed.build()).queue();
-    }
-
-    private void handleWhitelist(SlashCommandInteractionEvent event, String action, String pseudo) {
-        boolean whitelisted = action.equalsIgnoreCase("add");
-        
-        plugin.getPlayerMongoRepository().getPlayerByName(pseudo).ifPresentOrElse(player -> {
-            player.setPlayerData("whitelisted", whitelisted);
-            plugin.getPlayerMongoRepository().savePlayer(player);
-            
-            // Mettre à jour en cache si connecté
-            Player cached = PlayerManager.getPlayer(player.getPlayerUUID());
-            if (cached != null) cached.setPlayerData("whitelisted", whitelisted);
-
-            event.reply("Le joueur **" + pseudo + "** a été " + (whitelisted ? "ajouté à" : "retiré de") + " la whitelist.").queue();
-        }, () -> {
-            if (whitelisted) {
-                // Tenter de récupérer l'UUID via Mojang pour un nouveau joueur
-                event.deferReply().queue();
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                    try {
-                        String uuid = fetchUUID(pseudo);
-                        if (uuid != null) {
-                            Player newPlayer = new Player(uuid, pseudo, Rank.Joueur);
-                            newPlayer.setPlayerData("whitelisted", true);
-                            plugin.getPlayerMongoRepository().savePlayer(newPlayer);
-                            event.getHook().sendMessage("Le nouveau joueur **" + pseudo + "** a été ajouté à la whitelist (Profil créé).").queue();
-                        } else {
-                            // On ajoute quand même à la whitelist avec un UUID temporaire
-                            String tempUuid = "UNKNOWN-" + pseudo;
-                            Player newPlayer = new Player(tempUuid, pseudo, Rank.Joueur);
-                            newPlayer.setPlayerData("whitelisted", true);
-                            plugin.getPlayerMongoRepository().savePlayer(newPlayer);
-                            event.getHook().sendMessage("Le joueur **" + pseudo + "** a été ajouté à la whitelist (UUID non trouvé, il sera synchronisé à sa connexion).").queue();
-                        }
-                    } catch (Exception e) {
-                        event.getHook().sendMessage("Erreur lors de la récupération de l'UUID : " + e.getMessage()).queue();
-                    }
-                });
-            } else {
-                event.reply("Joueur non trouvé dans la base de données.").setEphemeral(true).queue();
-            }
-        });
-    }
-
-    private String fetchUUID(String playerName) throws Exception {
-        java.net.URL url = new java.net.URL("https://api.mojang.com/users/profiles/minecraft/" + playerName);
-        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        
-        if (connection.getResponseCode() == 200) {
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(connection.getInputStream()));
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-            reader.close();
-            
-            // Format simple car on ne veut que l'id: {"name":"PlayerName","id":"uuid"}
-            String json = response.toString();
-            int idIndex = json.indexOf("\"id\":\"") + 6;
-            String id = json.substring(idIndex, json.indexOf("\"", idIndex));
-            
-            // Mojang renvoie l'UUID sans tirets, on doit les ajouter pour Bukkit
-            return id.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5");
-        }
-        return null;
     }
 
     private void handleSetRank(SlashCommandInteractionEvent event, String pseudo, String rankName) {

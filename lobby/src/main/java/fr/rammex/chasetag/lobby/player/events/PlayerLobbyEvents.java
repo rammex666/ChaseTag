@@ -62,31 +62,13 @@ public class PlayerLobbyEvents implements Listener {
         org.bukkit.entity.Player player = event.getPlayer();
         String playerUUID = player.getUniqueId().toString();
         String playerName = player.getName();
-
-        // Whitelist check
-        if (ChaseTagLobby.getInstance().getConfig().getBoolean("discord.whitelist-enabled", false)) {
-            Player p = PlayerManager.getPlayer(playerUUID);
-            if (p == null) {
-                p = playerMongoRepository.getPlayerByUUID(playerUUID).orElse(null);
-            }
-            
-            if (p == null) {
-                // Check by name if not found by UUID
-                p = playerMongoRepository.getPlayerByName(playerName).orElse(null);
-            }
-
-            if (p == null || !Boolean.TRUE.equals(p.getPlayerData().get("whitelisted"))) {
-                player.kick(Component.text("§cVous n'êtes pas sur la whitelist.\n§7Rejoignez notre Discord pour vous faire whitelist !"));
-                return;
-            }
-        }
         
         // Priorité au chargement depuis MongoDB pour avoir les stats fraîches
         Player stored = playerMongoRepository != null ? 
             playerMongoRepository.getPlayerByUUID(playerUUID).orElse(null) : null;
 
         if (stored == null && playerMongoRepository != null) {
-            // Fallback lookup by name (for whitelisted players without UUID yet)
+            // Fallback lookup by name
             stored = playerMongoRepository.getPlayerByName(playerName).orElse(null);
             if (stored != null) {
                 // If it's a placeholder or different UUID, we migrate it
